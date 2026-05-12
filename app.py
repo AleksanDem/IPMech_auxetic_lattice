@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 1. Настройка страницы — ОБЯЗАТЕЛЬНО ПЕРВАЯ КОМАНДА
+# 1. Настройка страницы
 st.set_page_config(page_title="Auxetic Lattice Generator", layout="wide")
 
 # 2. Стиль интерфейса (CSS)
@@ -25,7 +25,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- МАТЕМАТИЧЕСКОЕ ЯДРО (ВАШ КОРРЕКТНЫЙ КОД) ---
+# --- МАТЕМАТИЧЕСКОЕ ЯДРО ---
 def get_base_unit(L, S, h, alpha_deg, scale):
     Ls, Ss, hs = L * scale, S * scale, h * scale
     alpha = np.radians(alpha_deg)
@@ -111,5 +111,10 @@ with col_data:
     
     st.info(f"Сетка: {nx}x{ny}\nL={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}")
 
-# Подсказка снизу
-st.caption("Математика узла и формула Гаусса для площади сохранены в исходном виде.")
+st.write("<br><br>", unsafe_allow_html=True) # Добавляем немного отступа
+st.markdown(
+    "<p style='text-align: center; color: gray; font-size: 0.8rem;'>"
+    "© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS"
+    "</p>", 
+    unsafe_allow_html=True
+)
