@@ -1,4 +1,44 @@
-IPMech_RAS_auxetic_latticeParametric Generator of 2D Re-entrant Auxetic StructuresThis project provides an interactive tool and a Python-based mathematical framework for designing and analyzing auxetic metamaterials (specifically re-entrant honeycomb structures). Developed at the Ishlinsky Institute for Problems in Mechanics of the Russian Academy of Sciences (IPMech RAS).🔬 Scientific ContextAuxetic materials are characterized by a negative Poisson's ratio. Unlike conventional materials, they become thicker perpendicular to the applied force when stretched. This repository focuses on the "re-entrant honeycomb" geometry, widely used in aerospace, medical implants, and vibration-damping systems due to its superior energy absorption properties.🚀 Key FeaturesInteractive Web Interface: Powered by Streamlit for real-time parameter tuning.Intelligent Tessellation:Ensures an even number of columns and an odd number of rows for optimal structural symmetry.Automatic "Butterfly" mirroring logic (staggered orientation).Precise Physical Scaling: Unified scaling factor for all geometric parameters ($L, S, h$).Real-time Analytics: Calculates actual model dimensions ($A_{fact}$, $B_{fact}$), total material area ($S_{fact}$), and effective relative density.CAD Integration Ready: Coordinates are optimized for direct injection into SolidWorks via Python API (SketchManager.AddToDB).🛠 Geometric ParametersL: Length of the central horizontal beam.S: Length of the inclined (re-entrant) ribs.h: Uniform thickness of the beams.Alpha ($\alpha$): Re-entrant angle (determines the auxetic effect).Scale: Global multiplier for manufacturing constraints.💻 Installation & UsageClone the repository:Bashgit clone https://github.com/your-username/IPMech_RAS_auxetic_lattice.git
-Install dependencies:Bashpip install -r requirements.txt
-Run the application:Bashstreamlit run app.py
-👨‍💻 Developer A.I. Demin Ishlinsky Institute for Problems in Mechanics of the Russian Academy of Sciences (IPMech RAS) Leading Engineer📜 LicenseThis project is developed for research and engineering automation purposes within the framework of IPMech RAS.
+# IPMech_RAS_auxetic_lattice
+
+### Parametric Generator of 2D Re-entrant Auxetic Structures
+
+This project provides an interactive tool and a Python-based mathematical framework for designing and analyzing **auxetic metamaterials** (specifically re-entrant honeycomb structures). Developed at the **Ishlinsky Institute for Problems in Mechanics of the Russian Academy of Sciences (IPMech RAS)**.
+
+---
+
+## 🔬 Scientific Context
+Auxetic materials are characterized by a **negative Poisson's ratio**. Unlike conventional materials, they become thicker perpendicular to the applied force when stretched. This repository focuses on the "re-entrant honeycomb" geometry, widely used in aerospace, medical implants, and vibration-damping systems.
+
+## 🚀 Key Features
+* **Interactive Web Interface**: Powered by Streamlit for real-time parameter tuning.
+* **Intelligent Tessellation**: Even number of columns and an odd number of rows.
+* **Precise Physical Scaling**: Unified scaling factor for $L, S, h$.
+* **CAD Integration Ready**: Coordinates optimized for SolidWorks via Python API.
+
+## 🛠 Geometric Parameters
+* **L**: Length of the central horizontal beam.
+* **S**: Length of the inclined ribs.
+* **h**: Uniform thickness.
+* **Alpha**: Re-entrant angle.
+* **Scale**: Global multiplier.
+
+## 💻 Installation & Usage
+
+1. Clone the repository:
+git clone https://github.com/AleksanDem/IPMeech_auxetic_lattice.git
+
+
+2. Install dependencies:
+pip install -r requirements.txt
+
+
+3. Run the application:
+streamlit run app.py
+
+
+## 👨‍💻 Developer
+**A.I. Demin**
+Ishlinsky Institute for Problems in Mechanics of the Russian Academy of Sciences (IPMech RAS) Leading Engineer
+
+## 📜 License
+This project is developed for research and engineering automation purposes within the framework of I
