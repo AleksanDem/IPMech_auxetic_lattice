@@ -113,5 +113,10 @@ with col_data:
     
     st.info(f"Сетка: {nx}x{ny}\nL={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}")
 
-st.sidebar.markdown("---") # Разделительная линия
-st.sidebar.caption("© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS")
+st.write("<br><br>", unsafe_allow_html=True) # Добавляем немного отступа
+st.markdown(
+    "<p style='text-align: center; color: gray; font-size: 0.8rem;'>"
+    "© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS"
+    "</p>", 
+    unsafe_allow_html=True
+)
