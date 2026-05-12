@@ -18,10 +18,12 @@ st.markdown("""
            }
            [data-testid="stMetric"] {
                background-color: #262730;
-               padding: 15px;
+               padding: 5px 10px !important;
                border-radius: 10px;
                border: 1px solid #464b5d;
+               margin-bottom: -10px !important;
            }
+           
     </style>
     """, unsafe_allow_html=True)
 
