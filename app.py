@@ -105,3 +105,11 @@ with col_plot:
     st.pyplot(fig, use_container_width=True)
 
 with col_metrics:
+    st.subheader("Результаты")
+    st.metric("Высота A_fact", f"{A_fact:.2f} мм")
+    st.metric("Длина B_fact", f"{B_fact:.2f} мм")
+    st.divider()
+    st.metric("Площадь материала", f"{total_area:.1f} мм²")
+    st.metric("Плотность", f"{density:.2f} %")
+    
+    st.info("Модель готова к экспорту координат для SolidWorks через API.")
