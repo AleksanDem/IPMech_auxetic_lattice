@@ -77,25 +77,31 @@ density = S_fact / (B_fact * A_fact)
 # --- ОСНОВНОЙ ЭКРАН ---
 st.title("Генератор ауксетической решетки")
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Высота A_fact", f"{A_fact:.2f} мм")
-col2.metric("Длина B_fact", f"{B_fact:.2f} мм")
-col3.metric("Площадь материала", f"{S_fact:.1f} мм²")
-col4.metric("Плотность", f"{density*100:.2f} %")
+with col_left:
 
-# Отрисовка
-fig, ax = plt.subplots(figsize=(7, 6))
-for i in range(nx):
-    for j in range(ny):
-        curr_unit = points.copy()
-        if (i + j) % 2 == 0: # Ориентация первого элемента <-
-            curr_unit[:, 0] = 2 * cx - curr_unit[:, 0]
-        curr_unit[:, 0] += i * w_step
-        curr_unit[:, 1] += j * v_step
-        ax.fill(curr_unit[:, 0], curr_unit[:, 1], facecolor='gray', edgecolor='blue', alpha=0.8, lw=0.5)
+    # Отрисовка
+    fig, ax = plt.subplots(figsize=(7, 6))
+    for i in range(nx):
+        for j in range(ny):
+            curr_unit = points.copy()
+            if (i + j) % 2 == 0: # Ориентация первого элемента <-
+                curr_unit[:, 0] = 2 * cx - curr_unit[:, 0]
+            curr_unit[:, 0] += i * w_step
+            curr_unit[:, 1] += j * v_step
+            ax.fill(curr_unit[:, 0], curr_unit[:, 1], facecolor='gray', edgecolor='blue', alpha=0.8, lw=0.5)
 
 ax.set_aspect('equal')
 ax.grid(True, linestyle=':', alpha=0.5)
 st.pyplot(fig, use_container_width=True)
+
+with col_right:
+    # Заголовок для параметров
+    st.subheader("Результаты")
+    
+    # Выводим параметры друг под другом
+    st.metric("Высота A_fact", f"{A_fact:.2f} мм")
+    st.metric("Длина B_fact", f"{B_fact:.2f} мм")
+    st.metric("Площадь", f"{S_fact:.1f} мм²")
+    st.metric("Плотность", f"{density:.2f} %")
 
 st.info(f"Параметры с учетом масштаба: L={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}. Сетка: {nx} столбцов x {ny} строк.")
