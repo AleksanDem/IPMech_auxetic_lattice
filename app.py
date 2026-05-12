@@ -1,4 +1,16 @@
 import streamlit as st
+
+# Убираем стандартные отступы сверху
+st.markdown("""
+    <style>
+           .block-container {
+                padding-top: 1rem;
+                padding-bottom: 0rem;
+                padding-left: 5rem;
+                padding-right: 5rem;
+            }
+    </style>
+    """, unsafe_allow_stdio=True)
 import numpy as np
 import matplotlib.pyplot as plt
 
