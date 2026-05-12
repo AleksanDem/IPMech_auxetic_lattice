@@ -39,7 +39,7 @@ scale = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
 
 st.sidebar.header("Размеры модели (мм)")
 total_w = st.sidebar.number_input("Общая ширина (B_target)", 10, 500, 70)
-total_h = st.sidebar.number_input("Общая высота (A_target)", 10, 500, 70)
+total_h = st.sidebar.number_input("Общая высота (A_target)", 10, 500, 40)
 
 # --- РАСЧЕТЫ ---
 points, unit_area, scaled_params = get_base_unit(L, S, h, alpha, scale)
@@ -83,6 +83,6 @@ for i in range(nx):
 
 ax.set_aspect('equal')
 ax.grid(True, linestyle=':', alpha=0.5)
-st.pyplot(fig, use_container_width=False)
+st.pyplot(fig, use_container_width=True)
 
 st.info(f"Параметры с учетом масштаба: L={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}. Сетка: {nx} столбцов x {ny} строк.")
