@@ -1,25 +1,32 @@
 import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Убираем стандартные отступы сверху
+# 1. Настройка страницы — ОБЯЗАТЕЛЬНО ПЕРВАЯ КОМАНДА
+st.set_page_config(page_title="Auxetic Lattice Generator", layout="wide")
+
+# 2. Стиль интерфейса (CSS)
 st.markdown("""
     <style>
            .block-container {
                 padding-top: 1rem;
                 padding-bottom: 0rem;
-                padding-left: 5rem;
-                padding-right: 5rem;
             }
+           h1 {
+               margin-top: -40px;
+               font-size: 2.2rem !important;
+           }
+           [data-testid="stMetric"] {
+               background-color: #262730;
+               padding: 15px;
+               border-radius: 10px;
+               border: 1px solid #464b5d;
+           }
     </style>
     """, unsafe_allow_html=True)
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Настройка страницы
-st.set_page_config(page_title="Auxetic Lattice Generator", layout="wide")
-
+# --- МАТЕМАТИЧЕСКОЕ ЯДРО (ВАШ КОРРЕКТНЫЙ КОД) ---
 def get_base_unit(L, S, h, alpha_deg, scale):
-    """Расчет геометрии узла и площади"""
     Ls, Ss, hs = L * scale, S * scale, h * scale
     alpha = np.radians(alpha_deg)
     
@@ -36,7 +43,6 @@ def get_base_unit(L, S, h, alpha_deg, scale):
     bottom = np.array([[x4, -y4], [x3, -y3], [x2, -y2], [x1, -y1]])
     points = np.vstack([top, bottom])
     
-    # Площадь через формулу Гаусса
     x, y = points[:, 0], points[:, 1]
     unit_area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
     
@@ -44,58 +50,66 @@ def get_base_unit(L, S, h, alpha_deg, scale):
 
 # --- ИНТЕРФЕЙС (Боковая панель) ---
 st.sidebar.header("Параметры ячейки (мм)")
-L = st.sidebar.slider("L (Основание)", 0.5, 10.0, 3.0, 0.1)
-S = st.sidebar.slider("S (Наклонная балка)", 0.5, 10.0, 1.5, 0.1)
-h = st.sidebar.slider("h (Толщина)", 0.1, 2.0, 0.4, 0.05)
-alpha = st.sidebar.slider("Alpha (Угол, град)", 20, 85, 60, 1)
-scale = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
+L_val = st.sidebar.slider("L (Основание)", 0.5, 10.0, 3.0, 0.1)
+S_val = st.sidebar.slider("S (Наклонная балка)", 0.5, 10.0, 1.5, 0.1)
+h_val = st.sidebar.slider("h (Толщина)", 0.1, 2.0, 0.4, 0.05)
+alpha_val = st.sidebar.slider("Alpha (Угол, град)", 20, 85, 60, 1)
+scale_val = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
 
 st.sidebar.header("Размеры модели (мм)")
 total_w = st.sidebar.number_input("Общая ширина (B_target)", 10, 500, 70)
 total_h = st.sidebar.number_input("Общая высота (A_target)", 10, 500, 40)
 
 # --- РАСЧЕТЫ ---
-points, unit_area, scaled_params = get_base_unit(L, S, h, alpha, scale)
+points, unit_area, scaled_params = get_base_unit(L_val, S_val, h_val, alpha_val, scale_val)
 Ls, Ss, hs = scaled_params
 
-# Параметры стыковки
-alpha_rad = np.radians(alpha)
+alpha_rad = np.radians(alpha_val)
 x3_s = Ls - Ss * np.cos(alpha_rad)
 y3_s = hs/2.0 + Ss * np.sin(alpha_rad)
 cx, cy = x3_s + (hs/2.0) * np.sin(alpha_rad), y3_s + (hs/2.0) * np.cos(alpha_rad)
 
 w_step, v_step = 2 * cx, 2 * cy
-
-# Количество (nx - четное, ny - нечетное)
 nx = ((int(np.ceil(total_w / w_step)) + 1) // 2) * 2
 ny = (int(np.ceil(total_h / v_step)) // 2) * 2 + 1
 
 B_fact, A_fact = nx * w_step, ny * v_step
 S_fact = (nx * ny) * unit_area
-density = S_fact / (B_fact * A_fact)
+density = S_fact / (B_fact * A_fact) if B_fact * A_fact > 0 else 0
 
 # --- ОСНОВНОЙ ЭКРАН ---
 st.title("Генератор ауксетической решетки")
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Высота A_fact", f"{A_fact:.2f} мм")
-col2.metric("Длина B_fact", f"{B_fact:.2f} мм")
-col3.metric("Площадь материала", f"{S_fact:.1f} мм²")
-col4.metric("Плотность", f"{density*100:.2f} %")
+# Создаем две колонки: левая для графика (большая), правая для данных (узкая)
+col_plot, col_data = st.columns([3.5, 1])
 
-# Отрисовка
-fig, ax = plt.subplots(figsize=(7, 6))
-for i in range(nx):
-    for j in range(ny):
-        curr_unit = points.copy()
-        if (i + j) % 2 == 0: # Ориентация первого элемента <-
-            curr_unit[:, 0] = 2 * cx - curr_unit[:, 0]
-        curr_unit[:, 0] += i * w_step
-        curr_unit[:, 1] += j * v_step
-        ax.fill(curr_unit[:, 0], curr_unit[:, 1], facecolor='gray', edgecolor='blue', alpha=0.8, lw=0.5)
+with col_plot:
+    fig, ax = plt.subplots(figsize=(10, 7))
+    for i in range(nx):
+        for j in range(ny):
+            curr_unit = points.copy()
+            if (i + j) % 2 == 0:
+                curr_unit[:, 0] = 2 * cx - curr_unit[:, 0]
+            curr_unit[:, 0] += i * w_step
+            curr_unit[:, 1] += j * v_step
+            ax.fill(curr_unit[:, 0], curr_unit[:, 1], facecolor='royalblue', edgecolor='#1f2d3d', alpha=0.8, lw=0.5)
 
-ax.set_aspect('equal')
-ax.grid(True, linestyle=':', alpha=0.5)
-st.pyplot(fig, use_container_width=True)
+    ax.set_aspect('equal')
+    ax.grid(True, linestyle=':', alpha=0.3)
+    ax.set_facecolor('#f0f2f6')
+    st.pyplot(fig, use_container_width=True)
 
-st.info(f"Параметры с учетом масштаба: L={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}. Сетка: {nx} столбцов x {ny} строк.")
+with col_data:
+    st.subheader("Результаты")
+    st.metric("Высота A_fact", f"{A_fact:.2f} мм")
+    st.metric("Длина B_fact", f"{B_fact:.2f} мм")
+    
+    st.divider()
+    
+    st.metric("Площадь материала", f"{S_fact:.1f} мм²")
+    st.metric("Плотность", f"{density*100:.2f} %")
+    
+    st.info(f"Сетка: {nx}x{ny}\nL={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}")
+
+# Подсказка снизу
+st.caption("Математика узла и формула Гаусса для площади сохранены в исходном виде.")
