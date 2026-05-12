@@ -10,7 +10,8 @@ st.markdown("""
                 padding-right: 5rem;
             }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True)
+
 import numpy as np
 import matplotlib.pyplot as plt
 
