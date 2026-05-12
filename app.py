@@ -83,6 +83,6 @@ for i in range(nx):
 
 ax.set_aspect('equal')
 ax.grid(True, linestyle=':', alpha=0.5)
-st.pyplot(fig, use_container_width=True)
+st.pyplot(fig, use_container_width=False)
 
 st.info(f"Параметры с учетом масштаба: L={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}. Сетка: {nx} столбцов x {ny} строк.")
