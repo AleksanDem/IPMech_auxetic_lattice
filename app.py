@@ -71,7 +71,7 @@ col3.metric("Площадь материала", f"{S_fact:.1f} мм²")
 col4.metric("Плотность", f"{density*100:.2f} %")
 
 # Отрисовка
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(7, 6))
 for i in range(nx):
     for j in range(ny):
         curr_unit = points.copy()
