@@ -1,115 +1,101 @@
 import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
 
-# 1. Настройка страницы (ДОЛЖНА быть первой командой)
-st.set_page_config(page_title="Auxetic Lattice Generator", layout="wide")
-
-# 2. Стиль интерфейса: поднимаем заголовок и настраиваем вид метрик
+# Убираем стандартные отступы сверху
 st.markdown("""
     <style>
            .block-container {
-                padding-top: 1.5rem;
+                padding-top: 1rem;
                 padding-bottom: 0rem;
-                padding-left: 3rem;
-                padding-right: 3rem;
+                padding-left: 5rem;
+                padding-right: 5rem;
             }
-           h1 {
-               margin-top: -45px;
-               padding-top: 0;
-               font-size: 2.2rem !important;
-           }
-           [data-testid="stMetric"] {
-               background-color: #262730;
-               padding: 15px;
-               border-radius: 10px;
-               border: 1px solid #464b5d;
-           }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Математическое ядро (восстановленная версия) ---
-def calculate_geometry(L, S, h, alpha_deg, scale):
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Настройка страницы
+st.set_page_config(page_title="Auxetic Lattice Generator", layout="wide")
+
+def get_base_unit(L, S, h, alpha_deg, scale):
+    """Расчет геометрии узла и площади"""
     Ls, Ss, hs = L * scale, S * scale, h * scale
     alpha = np.radians(alpha_deg)
     
-    # Расчет смещений (alpha - угол наклона к горизонту)
-    dx = Ss * np.cos(alpha)
-    dy_half = Ss * np.sin(alpha)
-    dy = 2 * dy_half
+    x1, y1 = 0, hs/2.0
+    x2, y2 = Ls, hs/2.0
+    x3 = Ls - Ss * np.cos(alpha)
+    y3 = hs/2.0 + Ss * np.sin(alpha)
+    x4 = x3 + hs * np.sin(alpha)
+    y4 = y3 + hs * np.cos(alpha)
+    x5 = Ls + (hs * (2 + np.cos(alpha))) / (2 * np.sin(alpha))
+    y5 = 0
     
-    # Площадь одной балки и 4-х ребер
-    unit_material_area = (Ls + 4 * Ss) * hs
-    return Ls, Ss, hs, dx, dy, dy_half, unit_material_area
+    top = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4], [x5, y5]])
+    bottom = np.array([[x4, -y4], [x3, -y3], [x2, -y2], [x1, -y1]])
+    points = np.vstack([top, bottom])
+    
+    # Площадь через формулу Гаусса
+    x, y = points[:, 0], points[:, 1]
+    unit_area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+    
+    return points, unit_area, (Ls, Ss, hs)
 
-# --- Боковая панель (Ввод данных) ---
+# --- ИНТЕРФЕЙС (Боковая панель) ---
 st.sidebar.header("Параметры ячейки (мм)")
-L_val = st.sidebar.slider("L (Основание)", 0.5, 10.0, 3.0, 0.1)
-S_val = st.sidebar.slider("S (Наклонная балка)", 0.5, 10.0, 1.5, 0.1)
-h_val = st.sidebar.slider("h (Толщина)", 0.1, 2.0, 0.4, 0.05)
-alpha_in = st.sidebar.slider("Alpha (Угол, град)", 10, 80, 60, 5)
-scale_val = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.1)
+L = st.sidebar.slider("L (Основание)", 0.5, 10.0, 3.0, 0.1)
+S = st.sidebar.slider("S (Наклонная балка)", 0.5, 10.0, 1.5, 0.1)
+h = st.sidebar.slider("h (Толщина)", 0.1, 2.0, 0.4, 0.05)
+alpha = st.sidebar.slider("Alpha (Угол, град)", 20, 85, 60, 1)
+scale = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
 
 st.sidebar.header("Размеры модели (мм)")
-B_target = st.sidebar.number_input("Общая ширина", 10, 500, 70)
-A_target = st.sidebar.number_input("Общая высота", 10, 500, 40)
+total_w = st.sidebar.number_input("Общая ширина (B_target)", 10, 500, 70)
+total_h = st.sidebar.number_input("Общая высота (A_target)", 10, 500, 40)
 
-# --- Расчеты параметров ---
-Ls, Ss, hs, dx, dy, dy_half, s_unit = calculate_geometry(L_val, S_val, h_val, alpha_in, scale_val)
+# --- РАСЧЕТЫ ---
+points, unit_area, scaled_params = get_base_unit(L, S, h, alpha, scale)
+Ls, Ss, hs = scaled_params
 
-# Оптимальная компоновка: четное число столбцов, нечетное число строк
-nx = int(B_target // (Ls + dx))
-if nx % 2 != 0: nx += 1
-ny = int(A_target // dy)
-ny = (ny // 2) * 2 + 1
+# Параметры стыковки
+alpha_rad = np.radians(alpha)
+x3_s = Ls - Ss * np.cos(alpha_rad)
+y3_s = hs/2.0 + Ss * np.sin(alpha_rad)
+cx, cy = x3_s + (hs/2.0) * np.sin(alpha_rad), y3_s + (hs/2.0) * np.cos(alpha_rad)
 
-B_fact = nx * (Ls + dx) + dx
-A_fact = ny * dy
-total_area = s_unit * (nx / 2) * ny
-density = (total_area / (B_fact * A_fact)) * 100 if B_fact * A_fact > 0 else 0
+w_step, v_step = 2 * cx, 2 * cy
 
-# --- Основной экран ---
+# Количество (nx - четное, ny - нечетное)
+nx = ((int(np.ceil(total_w / w_step)) + 1) // 2) * 2
+ny = (int(np.ceil(total_h / v_step)) // 2) * 2 + 1
+
+B_fact, A_fact = nx * w_step, ny * v_step
+S_fact = (nx * ny) * unit_area
+density = S_fact / (B_fact * A_fact)
+
+# --- ОСНОВНОЙ ЭКРАН ---
 st.title("Генератор ауксетической решетки")
 
-# Разделение на колонки: график слева, метрики справа
-col_plot, col_metrics = st.columns([3.5, 1])
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Высота A_fact", f"{A_fact:.2f} мм")
+col2.metric("Длина B_fact", f"{B_fact:.2f} мм")
+col3.metric("Площадь материала", f"{S_fact:.1f} мм²")
+col4.metric("Плотность", f"{density*100:.2f} %")
 
-with col_plot:
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Отрисовка с учетом (0,0) как начала первой балки и зеркалирования "Butterfly"
-    for r in range(ny):
-        for c in range(nx):
-            x0 = c * (Ls + dx)
-            y0 = r * dy
-            
-            # Логика зеркалирования столбцов для формирования узлов
-            side = 1 if (c % 2 == 0) else -1
-            
-            # Центральный горизонтальный луч (начало в x0, y0)
-            ax.plot([x0, x0 + Ls], [y0, y0], color='royalblue', lw=hs*2.5, solid_capstyle='round')
-            
-            # Наклонные ребра (сходящиеся/расходящиеся)
-            # Верхняя пара
-            ax.plot([x0, x0 - side * dx], [y0, y0 + dy_half], color='royalblue', lw=hs*2.5, solid_capstyle='round')
-            ax.plot([x0 + Ls, x0 + Ls + side * dx], [y0, y0 + dy_half], color='royalblue', lw=hs*2.5, solid_capstyle='round')
-            # Нижняя пара
-            ax.plot([x0, x0 - side * dx], [y0, y0 - dy_half], color='royalblue', lw=hs*2.5, solid_capstyle='round')
-            ax.plot([x0 + Ls, x0 + Ls + side * dx], [y0, y0 - dy_half], color='royalblue', lw=hs*2.5, solid_capstyle='round')
+# Отрисовка
+fig, ax = plt.subplots(figsize=(7, 6))
+for i in range(nx):
+    for j in range(ny):
+        curr_unit = points.copy()
+        if (i + j) % 2 == 0: # Ориентация первого элемента <-
+            curr_unit[:, 0] = 2 * cx - curr_unit[:, 0]
+        curr_unit[:, 0] += i * w_step
+        curr_unit[:, 1] += j * v_step
+        ax.fill(curr_unit[:, 0], curr_unit[:, 1], facecolor='gray', edgecolor='blue', alpha=0.8, lw=0.5)
 
-    ax.set_aspect('equal')
-    ax.grid(True, linestyle=':', alpha=0.4)
-    ax.set_xlabel("X, мм")
-    ax.set_ylabel("Y, мм")
-    
-    st.pyplot(fig, use_container_width=True)
+ax.set_aspect('equal')
+ax.grid(True, linestyle=':', alpha=0.5)
+st.pyplot(fig, use_container_width=True)
 
-with col_metrics:
-    st.subheader("Результаты")
-    st.metric("Высота A_fact", f"{A_fact:.2f} мм")
-    st.metric("Длина B_fact", f"{B_fact:.2f} мм")
-    st.divider()
-    st.metric("Площадь материала", f"{total_area:.1f} мм²")
-    st.metric("Плотность", f"{density:.2f} %")
-    
-    st.info("Модель готова к экспорту координат для SolidWorks через API.")
+st.info(f"Параметры с учетом масштаба: L={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}. Сетка: {nx} столбцов x {ny} строк.")
