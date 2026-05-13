@@ -59,8 +59,8 @@ alpha_val = st.sidebar.slider("Alpha (Угол, град)", 10, 170, 60, 1)
 scale_val = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
 
 st.sidebar.header("Размеры модели (мм)")
-total_w = st.sidebar.number_input("Общая ширина (B_target)", 10, 500, 70)
-total_h = st.sidebar.number_input("Общая высота (A_target)", 10, 500, 40)
+total_w = st.sidebar.number_input("Общая ширина, не менее (B_target)", 10, 500, 70)
+total_h = st.sidebar.number_input("Общая высота, не менее (A_target)", 10, 500, 40)
 
 # --- РАСЧЕТЫ ---
 points, unit_area, scaled_params = get_base_unit(L_val, S_val, h_val, alpha_val, scale_val)
