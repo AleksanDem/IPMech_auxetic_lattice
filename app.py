@@ -198,19 +198,19 @@ with col_metrics:
     ro_eff_percent = (s_real / s_eff) * 100
 
     r1_c1, r1_c2, r1_c3 = st.columns(3)
-    r1_c1.markdown(metric_card("А_real (Model height, mm), ", f"{f_h:.1f}"), unsafe_allow_html=True)
-    r1_c2.markdown(metric_card("B_real (Model width, mm), ", f"{f_w:.1f}"), unsafe_allow_html=True)
-    r1_c3.markdown(metric_card("S_eff = A_real*B_real", f"{s_eff:.0f}"), unsafe_allow_html=True)
+    r1_c1.markdown(metric_card("А_real (Model height), ", f"{f_h:.1f}", "  mm"), unsafe_allow_html=True)
+    r1_c2.markdown(metric_card("B_real (Model width), ", f"{f_w:.1f}", "  mm"), unsafe_allow_html=True)
+    r1_c3.markdown(metric_card("S_eff = A_real*B_real", f"{s_eff:.0f}", "  mm^2"), unsafe_allow_html=True)
 
     r2_c1, r2_c2, r2_c3 = st.columns(3)
-    r2_c1.markdown(metric_card("S_c (Cell area, mm^2)", f"{s_e:.1f}"), unsafe_allow_html=True)
+    r2_c1.markdown(metric_card("S_c (Cell area)", f"{s_e:.1f}", "  mm^2"), unsafe_allow_html=True)
     r2_c2.markdown(metric_card("N_c (Number of cells)", f"{n_e}"), unsafe_allow_html=True)
-    r2_c3.markdown(metric_card("S_real = S_c*N_c", f"{s_real:.0f}"), unsafe_allow_html=True)
+    r2_c3.markdown(metric_card("S_real = S_c*N_c", f"{s_real:.0f}", "  mm^2"), unsafe_allow_html=True)
 
     r3_c1, r3_c2, r3_c3 = st.columns(3)
-    r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}", "g/cm^3"), unsafe_allow_html=True)
-    r3_c2.markdown(metric_card("Model mass", f"{sample_mass:.1f}", "g"), unsafe_allow_html=True)
-    r3_c3.markdown(metric_card("Ro_eff = S_real/S_eff", f"{ro_eff_percent:.1f}", "%"), unsafe_allow_html=True)
+    r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}", "  g/cm^3"), unsafe_allow_html=True)
+    r3_c2.markdown(metric_card("Model mass", f"{sample_mass:.1f}", "  g"), unsafe_allow_html=True)
+    r3_c3.markdown(metric_card("Ro_eff = S_real/S_eff", f"{ro_eff_percent:.1f}", "  %"), unsafe_allow_html=True)
 
     # Авторская подпись внизу правой колонки
     st.markdown('<div class="column-footer">© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS</div>', unsafe_allow_html=True)
