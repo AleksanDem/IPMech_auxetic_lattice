@@ -121,24 +121,24 @@ if 'scale' not in st.session_state: st.session_state.scale = 1.0
 
 # --- ЛЕВАЯ КОЛОНКА (ПАРАМЕТРЫ И КНОПКИ) ---
 with col_params:
-    st.markdown('<div class="section-header">⚙️ Параметры ячейки</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">⚙️ Cell Parameters</div>', unsafe_allow_html=True)
     
     def compact_input(label, min_v, max_v, def_v, step, key):
         c1, c2 = st.columns([1.1, 1.0])
         c1.markdown(f'<div class="label-col">{label}</div>', unsafe_allow_html=True)
         return c2.number_input(label, min_v, max_v, def_v, step, key=key, label_visibility="collapsed")
 
-    L_v = compact_input("L (Основание)", 0.5, 50.0, 3.0, 0.1, "L")
-    S_v = compact_input("S (Наклон)", 0.5, 50.0, 1.5, 0.1, "S")
-    h_v = compact_input("h (Толщина)", 0.01, 10.0, 0.4, 0.05, "h")
-    a_v = compact_input("Alpha (°)", 10.0, 170.0, 60.0, 1.0, "alpha")
-    sc_v = compact_input("Scale", 0.01, 20.0, 1.0, 0.1, "scale")
+    L_v = compact_input("L (Base rib length)", 0.5, 50.0, 3.0, 0.1, "L")
+    S_v = compact_input("S (Inclined rib length)", 0.5, 50.0, 1.5, 0.1, "S")
+    h_v = compact_input("h (Wall thickness)", 0.01, 10.0, 0.4, 0.05, "h")
+    a_v = compact_input("Internal angle $\alpha$ (°)", 10.0, 170.0, 60.0, 1.0, "alpha")
+    sc_v = compact_input("Scaling factor", 0.01, 20.0, 1.0, 0.1, "scale")
 
-    st.markdown('<div class="section-header">📦 Параметры модели</div>', unsafe_allow_html=True)
-    target_B = compact_input("Ширина B", 5.0, 5000.0, 70.0, 1.0, "tB")
-    target_A = compact_input("Высота A", 5.0, 5000.0, 40.0, 1.0, "tA")
-    z_depth = compact_input("Глубина Z", 0.1, 2000.0, 70.0, 1.0, "zD")
-    ro_real_v = compact_input("Ro_real", 0.01, 20.0, 1.15, 0.01, "ro")
+    st.markdown('<div class="section-header">📦 Model Parameters</div>', unsafe_allow_html=True)
+    target_B = compact_input("A (Minimum width)", 5.0, 5000.0, 70.0, 1.0, "tB")
+    target_A = compact_input("B (Minimum height)", 5.0, 5000.0, 40.0, 1.0, "tA")
+    z_depth = compact_input("Z (Depth)", 0.1, 2000.0, 70.0, 1.0, "zD")
+    ro_real_v = compact_input("Ro_real (Material density)", 0.01, 20.0, 1.15, 0.01, "ro")
 
     # Выполнение расчетов для STL
     points, s_e, scaled = get_base_unit(L_v, S_v, h_v, a_v, sc_v)
@@ -160,19 +160,19 @@ with col_params:
 
     # Кнопки друг под другом внизу первой колонки
     st.write("") 
-    if st.button("🛠️ Подготовить STL", use_container_width=True):
-        with st.spinner("Расчет..."):
+    if st.button("🛠️ Generate STL", use_container_width=True):
+        with st.spinner("Calc..."):
             stl_mesh = generate_stl(all_units_coords, z_depth)
             buf = io.BytesIO()
             stl_mesh.save("model.stl", fh=buf)
             st.session_state['stl_ready'] = buf.getvalue()
     
     if 'stl_ready' in st.session_state:
-        st.download_button("📥 Скачать STL", st.session_state['stl_ready'], "auxetic.stl", "application/sla", use_container_width=True)
+        st.download_button("📥 Download STL", st.session_state['stl_ready'], "auxetic.stl", "application/sla", use_container_width=True)
 
 # --- ЦЕНТРАЛЬНАЯ КОЛОНКА ---
 with col_plot:
-    st.markdown('<div class="section-header">📈 Структура</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📈 Model</div>', unsafe_allow_html=True)
     fig, ax = plt.subplots(figsize=(10, 6.0))
     for u in all_units_coords:
         ax.fill(u[:, 0], u[:, 1], facecolor='#5c88be', edgecolor='#333333', linewidth=0.7)
@@ -181,11 +181,11 @@ with col_plot:
 
 # --- ПРАВАЯ КОЛОНКА (ХАРАКТЕРИСТИКИ И ПОДПИСЬ) ---
 with col_metrics:
-    st.markdown('<div class="section-header">🖼️ Схема ячейки</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🖼️ Cell schematic</div>', unsafe_allow_html=True)
     if os.path.exists("scheme.png"): 
         st.image("scheme.png", use_container_width=True)
     
-    st.markdown('<div class="section-header">📊 Характеристики</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📊 Calculated Properties</div>', unsafe_allow_html=True)
     def metric_card(label, value, unit=""):
         return f'<div class="metric-box"><div class="m-label">{label}</div><div class="m-value">{value}<span class="m-unit">{unit}</span></div></div>'
 
@@ -198,18 +198,18 @@ with col_metrics:
     ro_eff_percent = (s_real / s_eff) * 100
 
     r1_c1, r1_c2, r1_c3 = st.columns(3)
-    r1_c1.markdown(metric_card("высота модели, А", f"{f_h:.1f}"), unsafe_allow_html=True)
-    r1_c2.markdown(metric_card("ширина модели, B", f"{f_w:.1f}"), unsafe_allow_html=True)
-    r1_c3.markdown(metric_card("S_eff = A*B", f"{s_eff:.0f}"), unsafe_allow_html=True)
+    r1_c1.markdown(metric_card("Model height, А_real", f"{f_h:.1f}"), unsafe_allow_html=True)
+    r1_c2.markdown(metric_card("Model width, B_real", f"{f_w:.1f}"), unsafe_allow_html=True)
+    r1_c3.markdown(metric_card("S_eff = A_real*B_real", f"{s_eff:.0f}"), unsafe_allow_html=True)
 
     r2_c1, r2_c2, r2_c3 = st.columns(3)
-    r2_c1.markdown(metric_card("S_e (площадь 1 ячейки)", f"{s_e:.1f}"), unsafe_allow_html=True)
-    r2_c2.markdown(metric_card("N_e (кол-во ячеек)", f"{n_e}"), unsafe_allow_html=True)
+    r2_c1.markdown(metric_card("S_e (Cell area)", f"{s_e:.1f}"), unsafe_allow_html=True)
+    r2_c2.markdown(metric_card("N_e (Number of cells)", f"{n_e}"), unsafe_allow_html=True)
     r2_c3.markdown(metric_card("S_REAL = S_E*N_E", f"{s_real:.0f}"), unsafe_allow_html=True)
 
     r3_c1, r3_c2, r3_c3 = st.columns(3)
     r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}"), unsafe_allow_html=True)
-    r3_c2.markdown(metric_card("масса модели", f"{sample_mass:.1f}", "г"), unsafe_allow_html=True)
+    r3_c2.markdown(metric_card("Model mass", f"{sample_mass:.1f}", "г"), unsafe_allow_html=True)
     r3_c3.markdown(metric_card("Ro_eff = S_real/S_eff", f"{ro_eff_percent:.1f}", "%"), unsafe_allow_html=True)
 
     # Авторская подпись внизу правой колонки
