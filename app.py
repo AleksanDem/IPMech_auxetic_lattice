@@ -55,7 +55,7 @@ st.sidebar.header("Параметры ячейки (мм)")
 L_val = st.sidebar.slider("L (Основание)", 0.5, 10.0, 3.0, 0.1)
 S_val = st.sidebar.slider("S (Наклонная балка)", 0.5, 10.0, 1.5, 0.1)
 h_val = st.sidebar.slider("h (Толщина)", 0.1, 2.0, 0.4, 0.05)
-alpha_val = st.sidebar.slider("Alpha (Угол, град)", 20, 85, 60, 1)
+alpha_val = st.sidebar.slider("Alpha (Угол, град)", 10, 170, 60, 1)
 scale_val = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
 
 st.sidebar.header("Размеры модели (мм)")
