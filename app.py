@@ -135,8 +135,8 @@ with col_params:
     sc_v = compact_input("Scaling factor", 0.01, 20.0, 1.0, 0.1, "scale")
 
     st.markdown('<div class="section-header">📦 Model Parameters</div>', unsafe_allow_html=True)
-    target_B = compact_input("A (Minimum width)", 5.0, 5000.0, 70.0, 1.0, "tB")
-    target_A = compact_input("B (Minimum height)", 5.0, 5000.0, 40.0, 1.0, "tA")
+    target_A = compact_input("A (Minimum height)", 5.0, 5000.0, 40.0, 1.0, "tA")
+    target_B = compact_input("B (Minimum width)", 5.0, 5000.0, 70.0, 1.0, "tB")
     z_depth = compact_input("Z (Depth)", 0.1, 2000.0, 70.0, 1.0, "zD")
     ro_real_v = compact_input("Ro_real (Material density)", 0.01, 20.0, 1.15, 0.01, "ro")
 
