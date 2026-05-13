@@ -1,37 +1,76 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from stl import mesh
+import io
+import os
+import tripy 
 
 # 1. Настройка страницы
-st.set_page_config(page_title="Auxetic Lattice Generator", layout="wide")
+st.set_page_config(
+    page_title="IPMech Auxetic Tool", 
+    layout="wide"
+)
 
-# 2. Стиль интерфейса (CSS)
+# 2. CSS: Верстка согласно вашим требованиям
 st.markdown("""
     <style>
-           .block-container {
-                padding-top: 1rem;
-                padding-bottom: 0rem;
-            }
-           h1 {
-               margin-top: -40px;
-               font-size: 2.2rem !important;
+           .block-container { padding-top: 1rem; padding-bottom: 0rem; }
+           header { visibility: hidden; }
+           
+           /* Заголовки секций */
+           .section-header {
+               margin-top: 5px !important;
+               margin-bottom: 10px !important;
+               font-size: 1.0rem !important;
+               font-weight: bold;
+               color: #5c88be; 
+               border-bottom: 1px solid #464b5d;
+               padding-bottom: 3px;
            }
-           [data-testid="stMetric"] {
-               background-color: #262730;
-               padding: 5px 10px !important;
-               border-radius: 10px;
-               border: 1px solid #464b5d;
-               margin-bottom: -10px !important;
+
+           /* Горизонтальное расположение подписи и поля */
+           .label-col {
+               font-size: 0.85rem;
+               color: #9ea4b0;
+               padding-top: 8px;
            }
            
+           /* КАРТОЧКИ ХАРАКТЕРИСТИК (сетка) */
+           .metric-box {
+               background-color: #1e2129;
+               border: 1px solid #3d4455;
+               padding: 6px;
+               border-radius: 4px;
+               margin-bottom: 5px;
+               text-align: center;
+               min-height: 65px;
+               display: flex;
+               flex-direction: column;
+               justify-content: center;
+           }
+           /* Шрифт названия ячеек характеристик 0.7 */
+           .m-label { color: #9ea4b0; font-size: 0.7rem; text-transform: uppercase; line-height: 1.1; margin-bottom: 4px; }
+           .m-value { color: #ffffff; font-size: 0.9rem; font-weight: bold; font-family: 'Consolas', monospace; }
+           .m-unit { font-size: 0.6rem; color: #5c88be; }
+
+           /* Стили для подписи в правой колонке */
+           .column-footer {
+               text-align: center; color: #808495; padding-top: 20px;
+               font-size: 0.75rem; border-top: 1px solid #464b5d; margin-top: 20px;
+           }
+           
+           /* Уплотнение кнопок в левой колонке */
+           .stButton > button {
+               margin-bottom: -10px;
+           }
     </style>
     """, unsafe_allow_html=True)
 
-# --- МАТЕМАТИЧЕСКОЕ ЯДРО ---
+# --- ГЕОМЕТРИЧЕСКИЙ БЛОК ---
 def get_base_unit(L, S, h, alpha_deg, scale):
     Ls, Ss, hs = L * scale, S * scale, h * scale
     alpha = np.radians(alpha_deg)
-    
     x1, y1 = 0, hs/2.0
     x2, y2 = Ls, hs/2.0
     x3 = Ls - Ss * np.cos(alpha)
@@ -40,83 +79,138 @@ def get_base_unit(L, S, h, alpha_deg, scale):
     y4 = y3 + hs * np.cos(alpha)
     x5 = Ls + (hs * (2 + np.cos(alpha))) / (2 * np.sin(alpha))
     y5 = 0
-    
     top = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4], [x5, y5]])
     bottom = np.array([[x4, -y4], [x3, -y3], [x2, -y2], [x1, -y1]])
     points = np.vstack([top, bottom])
-    
     x, y = points[:, 0], points[:, 1]
     unit_area = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-    
     return points, unit_area, (Ls, Ss, hs)
 
-# --- ИНТЕРФЕЙС (Боковая панель) ---
-st.sidebar.header("Параметры ячейки (мм)")
-L_val = st.sidebar.slider("L (Основание)", 0.5, 10.0, 3.0, 0.1)
-S_val = st.sidebar.slider("S (Наклонная балка)", 0.5, 10.0, 1.5, 0.1)
-h_val = st.sidebar.slider("h (Толщина)", 0.1, 2.0, 0.4, 0.05)
-alpha_val = st.sidebar.slider("Alpha (Угол, град)", 10, 170, 60, 1)
-scale_val = st.sidebar.slider("Scale (Масштаб)", 0.1, 5.0, 1.0, 0.05)
+def generate_stl(all_units, depth):
+    faces = []
+    for pts in all_units:
+        num_pts = len(pts)
+        p_bot = np.hstack([pts, np.zeros((num_pts, 1))])
+        p_top = np.hstack([pts, np.full((num_pts, 1), depth)])
+        for k in range(num_pts):
+            next_k = (k + 1) % num_pts
+            faces.append([p_bot[k], p_bot[next_k], p_top[next_k]])
+            faces.append([p_bot[k], p_top[next_k], p_top[k]])
+        polygon_vertices = [tuple(p) for p in pts]
+        try:
+            triangles = tripy.earclip(polygon_vertices)
+            for tri in triangles:
+                v1, v2, v3 = np.array(tri[0]), np.array(tri[1]), np.array(tri[2])
+                faces.append([np.append(v1, 0), np.append(v3, 0), np.append(v2, 0)])
+                faces.append([np.append(v1, depth), np.append(v2, depth), np.append(v3, depth)])
+        except: continue
+    model = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
+    for i, f in enumerate(faces): model.vectors[i] = f
+    return model
 
-st.sidebar.header("Размеры модели (мм)")
-total_w = st.sidebar.number_input("Общая ширина, не менее (B_target)", 10, 500, 70)
-total_h = st.sidebar.number_input("Общая высота, не менее (A_target)", 10, 500, 40)
+# --- РАСПРЕДЕЛЕНИЕ КОЛОНОК ---
+col_params, col_plot, col_metrics = st.columns([1.0, 3.2, 1.2])
 
-# --- РАСЧЕТЫ ---
-points, unit_area, scaled_params = get_base_unit(L_val, S_val, h_val, alpha_val, scale_val)
-Ls, Ss, hs = scaled_params
+# --- РАСЧЕТЫ (вынесены вверх для использования в кнопках) ---
+# Инициализация переменных по умолчанию для предотвращения ошибок
+if 'L' not in st.session_state: st.session_state.L = 3.0
+if 'S' not in st.session_state: st.session_state.S = 1.5
+if 'h' not in st.session_state: st.session_state.h = 0.4
+if 'alpha' not in st.session_state: st.session_state.alpha = 60.0
+if 'scale' not in st.session_state: st.session_state.scale = 1.0
 
-alpha_rad = np.radians(alpha_val)
-x3_s = Ls - Ss * np.cos(alpha_rad)
-y3_s = hs/2.0 + Ss * np.sin(alpha_rad)
-cx, cy = x3_s + (hs/2.0) * np.sin(alpha_rad), y3_s + (hs/2.0) * np.cos(alpha_rad)
+# --- ЛЕВАЯ КОЛОНКА (ПАРАМЕТРЫ И КНОПКИ) ---
+with col_params:
+    st.markdown('<div class="section-header">⚙️ Параметры ячейки</div>', unsafe_allow_html=True)
+    
+    def compact_input(label, min_v, max_v, def_v, step, key):
+        c1, c2 = st.columns([1.1, 1.0])
+        c1.markdown(f'<div class="label-col">{label}</div>', unsafe_allow_html=True)
+        return c2.number_input(label, min_v, max_v, def_v, step, key=key, label_visibility="collapsed")
 
-w_step, v_step = 2 * cx, 2 * cy
-nx = ((int(np.ceil(total_w / w_step)) + 1) // 2) * 2
-ny = (int(np.ceil(total_h / v_step)) // 2) * 2 + 1
+    L_v = compact_input("L (Основание)", 0.5, 50.0, 3.0, 0.1, "L")
+    S_v = compact_input("S (Наклон)", 0.5, 50.0, 1.5, 0.1, "S")
+    h_v = compact_input("h (Толщина)", 0.01, 10.0, 0.4, 0.05, "h")
+    a_v = compact_input("Alpha (°)", 10.0, 170.0, 60.0, 1.0, "alpha")
+    sc_v = compact_input("Scale", 0.01, 20.0, 1.0, 0.1, "scale")
 
-B_fact, A_fact = nx * w_step, ny * v_step
-S_fact = (nx * ny) * unit_area
-density = S_fact / (B_fact * A_fact) if B_fact * A_fact > 0 else 0
+    st.markdown('<div class="section-header">📦 Параметры модели</div>', unsafe_allow_html=True)
+    target_B = compact_input("Ширина B", 5.0, 5000.0, 70.0, 1.0, "tB")
+    target_A = compact_input("Высота A", 5.0, 5000.0, 40.0, 1.0, "tA")
+    z_depth = compact_input("Глубина Z", 0.1, 2000.0, 70.0, 1.0, "zD")
+    ro_real_v = compact_input("Ro_real", 0.01, 20.0, 1.15, 0.01, "ro")
 
-# --- ОСНОВНОЙ ЭКРАН ---
-st.title("Генератор ауксетической решетки")
+    # Выполнение расчетов для STL
+    points, s_e, scaled = get_base_unit(L_v, S_v, h_v, a_v, sc_v)
+    Ls, Ss, hs = scaled
+    alpha_r = np.radians(a_v)
+    cx = (Ls - Ss * np.cos(alpha_r)) + (hs/2.0) * np.sin(alpha_r)
+    cy = (hs/2.0 + Ss * np.sin(alpha_r)) + (hs/2.0) * np.cos(alpha_r)
+    w_step, v_step = 2 * cx, 2 * cy
+    nx = max(2, ((int(np.ceil(target_B / w_step)) + 1) // 2) * 2)
+    ny = max(1, (int(np.ceil(target_A / v_step)) // 2) * 2 + 1)
 
-# Создаем две колонки: левая для графика (большая), правая для данных (узкая)
-col_plot, col_data = st.columns([3.5, 1])
-
-with col_plot:
-    fig, ax = plt.subplots(figsize=(10, 7))
+    all_units_coords = []
     for i in range(nx):
         for j in range(ny):
-            curr_unit = points.copy()
-            if (i + j) % 2 == 0:
-                curr_unit[:, 0] = 2 * cx - curr_unit[:, 0]
-            curr_unit[:, 0] += i * w_step
-            curr_unit[:, 1] += j * v_step
-            ax.fill(curr_unit[:, 0], curr_unit[:, 1], facecolor='royalblue', edgecolor='#1f2d3d', alpha=0.8, lw=0.5)
+            u = points.copy()
+            if (i + j) % 2 == 0: u[:, 0] = 2 * cx - u[:, 0]
+            u[:, 0] += i * w_step; u[:, 1] += j * v_step
+            all_units_coords.append(u)
 
-    ax.set_aspect('equal')
-    ax.grid(True, linestyle=':', alpha=0.3)
-    ax.set_facecolor('#f0f2f6')
+    # Кнопки друг под другом внизу первой колонки
+    st.write("") 
+    if st.button("🛠️ Подготовить STL", use_container_width=True):
+        with st.spinner("Расчет..."):
+            stl_mesh = generate_stl(all_units_coords, z_depth)
+            buf = io.BytesIO()
+            stl_mesh.save("model.stl", fh=buf)
+            st.session_state['stl_ready'] = buf.getvalue()
+    
+    if 'stl_ready' in st.session_state:
+        st.download_button("📥 Скачать STL", st.session_state['stl_ready'], "auxetic.stl", "application/sla", use_container_width=True)
+
+# --- ЦЕНТРАЛЬНАЯ КОЛОНКА ---
+with col_plot:
+    st.markdown('<div class="section-header">📈 Структура</div>', unsafe_allow_html=True)
+    fig, ax = plt.subplots(figsize=(10, 6.0))
+    for u in all_units_coords:
+        ax.fill(u[:, 0], u[:, 1], facecolor='#5c88be', edgecolor='#333333', linewidth=0.7)
+    ax.set_aspect('equal'); ax.grid(True, linestyle=':', alpha=0.3)
     st.pyplot(fig, use_container_width=True)
 
-with col_data:
-    st.subheader("Результаты")
-    st.metric("Высота A_fact", f"{A_fact:.2f} мм")
-    st.metric("Длина B_fact", f"{B_fact:.2f} мм")
+# --- ПРАВАЯ КОЛОНКА (ХАРАКТЕРИСТИКИ И ПОДПИСЬ) ---
+with col_metrics:
+    st.markdown('<div class="section-header">🖼️ Схема ячейки</div>', unsafe_allow_html=True)
+    if os.path.exists("scheme.png"): 
+        st.image("scheme.png", use_container_width=True)
     
-    st.divider()
-    
-    st.metric("Площадь материала", f"{S_fact:.1f} мм²")
-    st.metric("Плотность", f"{density*100:.2f} %")
-    
-    st.info(f"Сетка: {nx}x{ny}\nL={Ls:.2f}, S={Ss:.2f}, h={hs:.2f}")
+    st.markdown('<div class="section-header">📊 Характеристики</div>', unsafe_allow_html=True)
+    def metric_card(label, value, unit=""):
+        return f'<div class="metric-box"><div class="m-label">{label}</div><div class="m-value">{value}<span class="m-unit">{unit}</span></div></div>'
 
-st.write("<br><br>", unsafe_allow_html=True) # Добавляем немного отступа
-st.markdown(
-    "<p style='text-align: center; color: gray; font-size: 0.8rem;'>"
-    "© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS"
-    "</p>", 
-    unsafe_allow_html=True
-)
+    # Расчет выходных параметров
+    f_h, f_w = ny * v_step, nx * w_step
+    s_eff = f_h * f_w
+    n_e = len(all_units_coords)
+    s_real = s_e * n_e
+    sample_mass = (s_real * z_depth) * ro_real_v * 0.001
+    ro_eff_percent = (s_real / s_eff) * 100
+
+    r1_c1, r1_c2, r1_c3 = st.columns(3)
+    r1_c1.markdown(metric_card("высота модели, А", f"{f_h:.1f}"), unsafe_allow_html=True)
+    r1_c2.markdown(metric_card("ширина модели, B", f"{f_w:.1f}"), unsafe_allow_html=True)
+    r1_c3.markdown(metric_card("S_eff = A*B", f"{s_eff:.0f}"), unsafe_allow_html=True)
+
+    r2_c1, r2_c2, r2_c3 = st.columns(3)
+    r2_c1.markdown(metric_card("S_e (площадь 1 ячейки)", f"{s_e:.1f}"), unsafe_allow_html=True)
+    r2_c2.markdown(metric_card("N_e (кол-во ячеек)", f"{n_e}"), unsafe_allow_html=True)
+    r2_c3.markdown(metric_card("S_REAL = S_E*N_E", f"{s_real:.0f}"), unsafe_allow_html=True)
+
+    r3_c1, r3_c2, r3_c3 = st.columns(3)
+    r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}"), unsafe_allow_html=True)
+    r3_c2.markdown(metric_card("масса модели", f"{sample_mass:.1f}", "г"), unsafe_allow_html=True)
+    r3_c3.markdown(metric_card("Ro_eff = S_real/S_eff", f"{ro_eff_percent:.1f}", "%"), unsafe_allow_html=True)
+
+    # Авторская подпись внизу правой колонки
+    st.markdown('<div class="column-footer">© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS</div>', unsafe_allow_html=True)
