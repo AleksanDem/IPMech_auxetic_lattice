@@ -209,7 +209,7 @@ with col_metrics:
 
     r3_c1, r3_c2, r3_c3 = st.columns(3)
     r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}"), unsafe_allow_html=True)
-    r3_c2.markdown(metric_card("Model mass", f"{sample_mass:.1f}", "г"), unsafe_allow_html=True)
+    r3_c2.markdown(metric_card("Model mass", f"{sample_mass:.1f}", "g"), unsafe_allow_html=True)
     r3_c3.markdown(metric_card("Ro_eff = S_real/S_eff", f"{ro_eff_percent:.1f}", "%"), unsafe_allow_html=True)
 
     # Авторская подпись внизу правой колонки
