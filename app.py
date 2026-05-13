@@ -131,7 +131,7 @@ with col_params:
     L_v = compact_input("L (Base rib length)", 0.5, 50.0, 3.0, 0.1, "L")
     S_v = compact_input("S (Inclined rib length)", 0.5, 50.0, 1.5, 0.1, "S")
     h_v = compact_input("h (Wall thickness)", 0.01, 10.0, 0.4, 0.05, "h")
-    a_v = compact_input("Internal angle $\alpha$ (°)", 10.0, 170.0, 60.0, 1.0, "alpha")
+    a_v = compact_input("a (Internal angle°)", 10.0, 170.0, 60.0, 1.0, "alpha")
     sc_v = compact_input("Scaling factor", 0.01, 20.0, 1.0, 0.1, "scale")
 
     st.markdown('<div class="section-header">📦 Model Parameters</div>', unsafe_allow_html=True)
