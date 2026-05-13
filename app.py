@@ -128,17 +128,17 @@ with col_params:
         c1.markdown(f'<div class="label-col">{label}</div>', unsafe_allow_html=True)
         return c2.number_input(label, min_v, max_v, def_v, step, key=key, label_visibility="collapsed")
 
-    L_v = compact_input("L (Base rib length)", 0.5, 50.0, 3.0, 0.1, "L")
-    S_v = compact_input("S (Inclined rib length)", 0.5, 50.0, 1.5, 0.1, "S")
-    h_v = compact_input("h (Wall thickness)", 0.01, 10.0, 0.4, 0.05, "h")
-    a_v = compact_input("a (Internal angle°)", 10.0, 170.0, 60.0, 1.0, "alpha")
+    L_v = compact_input("L (Base rib length, mm)", 0.5, 50.0, 3.0, 0.1, "L")
+    S_v = compact_input("S (Inclined rib length, mm)", 0.5, 50.0, 1.5, 0.1, "S")
+    h_v = compact_input("h (Wall thickness, mm)", 0.01, 10.0, 0.4, 0.05, "h")
+    a_v = compact_input("a (Internal angle, °)", 10.0, 170.0, 60.0, 1.0, "alpha")
     sc_v = compact_input("Scaling factor", 0.01, 20.0, 1.0, 0.1, "scale")
 
     st.markdown('<div class="section-header">📦 Model Parameters</div>', unsafe_allow_html=True)
-    target_A = compact_input("A (Minimum height)", 5.0, 5000.0, 40.0, 1.0, "tA")
-    target_B = compact_input("B (Minimum width)", 5.0, 5000.0, 70.0, 1.0, "tB")
-    z_depth = compact_input("Z (Depth)", 0.1, 2000.0, 70.0, 1.0, "zD")
-    ro_real_v = compact_input("Ro_real (Material density)", 0.01, 20.0, 1.15, 0.01, "ro")
+    target_A = compact_input("A (Minimum height, mm)", 5.0, 5000.0, 40.0, 1.0, "tA")
+    target_B = compact_input("B (Minimum width, mm)", 5.0, 5000.0, 70.0, 1.0, "tB")
+    z_depth = compact_input("Z (Depth, mm)", 0.1, 2000.0, 70.0, 1.0, "zD")
+    ro_real_v = compact_input("Ro_real (Material density, g/cm^3)", 0.01, 20.0, 1.15, 0.01, "ro")
 
     # Выполнение расчетов для STL
     points, s_e, scaled = get_base_unit(L_v, S_v, h_v, a_v, sc_v)
@@ -198,17 +198,17 @@ with col_metrics:
     ro_eff_percent = (s_real / s_eff) * 100
 
     r1_c1, r1_c2, r1_c3 = st.columns(3)
-    r1_c1.markdown(metric_card("Model height, А_real", f"{f_h:.1f}"), unsafe_allow_html=True)
-    r1_c2.markdown(metric_card("Model width, B_real", f"{f_w:.1f}"), unsafe_allow_html=True)
+    r1_c1.markdown(metric_card("А_real (Model height, mm), ", f"{f_h:.1f}"), unsafe_allow_html=True)
+    r1_c2.markdown(metric_card("B_real (Model width, mm), ", f"{f_w:.1f}"), unsafe_allow_html=True)
     r1_c3.markdown(metric_card("S_eff = A_real*B_real", f"{s_eff:.0f}"), unsafe_allow_html=True)
 
     r2_c1, r2_c2, r2_c3 = st.columns(3)
-    r2_c1.markdown(metric_card("S_e (Cell area)", f"{s_e:.1f}"), unsafe_allow_html=True)
-    r2_c2.markdown(metric_card("N_e (Number of cells)", f"{n_e}"), unsafe_allow_html=True)
-    r2_c3.markdown(metric_card("S_REAL = S_E*N_E", f"{s_real:.0f}"), unsafe_allow_html=True)
+    r2_c1.markdown(metric_card("S_c (Cell area, mm^2)", f"{s_e:.1f}"), unsafe_allow_html=True)
+    r2_c2.markdown(metric_card("N_c (Number of cells)", f"{n_e}"), unsafe_allow_html=True)
+    r2_c3.markdown(metric_card("S_real = S_c*N_c", f"{s_real:.0f}"), unsafe_allow_html=True)
 
     r3_c1, r3_c2, r3_c3 = st.columns(3)
-    r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}"), unsafe_allow_html=True)
+    r3_c1.markdown(metric_card("Ro_real", f"{ro_real_v:.2f}", "g/cm^3"), unsafe_allow_html=True)
     r3_c2.markdown(metric_card("Model mass", f"{sample_mass:.1f}", "g"), unsafe_allow_html=True)
     r3_c3.markdown(metric_card("Ro_eff = S_real/S_eff", f"{ro_eff_percent:.1f}", "%"), unsafe_allow_html=True)
 
