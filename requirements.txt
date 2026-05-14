@@ -3,3 +3,5 @@ numpy
 matplotlib
 numpy-stl
 tripy
+selenium
+webdriver-manager
