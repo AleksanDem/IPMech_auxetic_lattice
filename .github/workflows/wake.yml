@@ -2,7 +2,7 @@ name: Wake Streamlit App
 
 on:
   schedule:
-    - cron: "0 */3 * * *" # Запуск каждые 4 часа
+    - cron: "0 */3 * * *" # Запуск каждые 3 часа
   workflow_dispatch: # Позволяет запускать экшен вручную
 
 jobs:
