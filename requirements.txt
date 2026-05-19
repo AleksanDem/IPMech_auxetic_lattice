@@ -5,3 +5,5 @@ numpy-stl
 shapely
 tripy
 ezdxf
+selenium
+webdriver-manager
