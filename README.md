@@ -9,7 +9,8 @@ This project provides an interactive tool and a Python-based mathematical framew
 ## 🔬 Scientific Context
 Auxetic materials are characterized by a **negative Poisson's ratio** ($\nu^* < 0$). Unlike conventional materials, they expand laterally when stretched and contract when compressed. This repository focuses on the "re-entrant honeycomb" geometry, widely used in aerospace, medical implants, smart sensors, and impact-absorption systems.
 
-The tool includes an analytical estimation of the effective Poisson's ratio for the re-entrant structure based on the classical **Gibson & Ashby model**:
+The tool includes an analytical estimation of the effective Poisson's ratio for the re-entrant structure based on the classical **Gibson & Ashby model**:  
+
 $$\nu^* = -\frac{\cos\alpha \cdot (1 - \frac{S}{L}\cos\alpha)}{\frac{S}{L} \cdot \sin^2\alpha}$$
 
 ---
