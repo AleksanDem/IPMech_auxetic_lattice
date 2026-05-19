@@ -1,7 +1,7 @@
 streamlit
 numpy
-matplotlib
+plotly
 numpy-stl
+shapely
 tripy
-selenium
-webdriver-manager
+ezdxf
