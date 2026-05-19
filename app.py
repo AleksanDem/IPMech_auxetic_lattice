@@ -578,4 +578,4 @@ with col_metrics:
     r4_c2.markdown(metric_card(t("m_ro_mat"), f"{ro_real_v:.2f}", " г/см³"), unsafe_allow_html=True)
     r4_c3.markdown(metric_card(t("m_poisson"), f"{nu_star:.3f}"), unsafe_allow_html=True)
 
-    st.markdown('<div class="column-footer">© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS<br><i>*Optimized by Antigravity v2.0*</i></div>', unsafe_allow_html=True)
+    st.markdown('<div class="column-footer">© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS<br></div>', unsafe_allow_html=True)
