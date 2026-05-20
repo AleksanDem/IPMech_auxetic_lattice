@@ -1,3 +1,7 @@
 streamlit
 numpy
-matplotlib
+plotly
+numpy-stl
+shapely
+tripy
+ezdxf
