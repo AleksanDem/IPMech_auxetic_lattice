@@ -73,29 +73,14 @@ TRANSLATIONS = {
     "m_depth":        {"ru": "Глубина Z",               "en": "Depth Z"},
     "m_ro_mat":       {"ru": "Плотность Ro",            "en": "Density Ro"},
     "m_poisson":      {"ru": "Коэфф. Пуассона",         "en": "Poisson's ratio"},
-    "m_height_help":  {"ru": "Фактическая габаритная высота по оси Y (мм)", "en": "Actual envelope height along Y axis (mm)"},
-    "m_width_help":   {"ru": "Фактическая габаритная ширина по оси X (мм)", "en": "Actual envelope width along X axis (mm)"},
-    "m_seff_help":    {"ru": "Площадь прямоугольного габарита структуры: S_eff = A * B (мм²)", "en": "Envelope bounding box area: S_eff = A * B (mm²)"},
-    "m_se_help":      {"ru": "Площадь сечения одной элементарной ячейки S_e (мм²)", "en": "Cross-sectional area of single cell S_e (mm²)"},
-    "m_ne_help":      {"ru": "Общее количество элементарных ячеек в структуре N_e", "en": "Total number of unit cells in structure N_e"},
-    "m_sreal_help":   {"ru": "Суммарная площадь структуры: S_real = S_e * N_e (мм²)", "en": "Total structure cross-sectional area: S_real = S_e * N_e (mm²)"},
-    "m_volume_help":  {"ru": "Объём твердого тела модели: V = S_real * Z (мм³)", "en": "Solid model volume: V = S_real * Z (мм³)"},
-    "m_mass_help":    {"ru": "Расчетная физическая масса образца: m = Ro_real * V * 0.001 (г)", "en": "Calculated physical mass of the sample: m = Ro_real * V * 0.001 (g)"},
-    "m_ro_total_help":{"ru": "Коэффициент заполнения пространства материалом: S_real / S_eff (%)", "en": "Lattice space filling ratio: S_real / S_eff (%)"},
-    "m_depth_help":   {"ru": "Глубина экструзии по оси Z (мм)", "en": "Extrusion depth along Z axis (mm)"},
-    "m_ro_mat_help":  {"ru": "Физическая плотность материала (г/см³)", "en": "Physical material density (g/cm³)"},
-    "m_poisson_help": {"ru": "Теоретический коэффициент Пуассона для бесконечно тонких стенок (поперечная деформация / продольная деформация)", "en": "Theoretical Poisson's ratio for infinitely thin cell walls (transverse strain / axial strain)"},
     "rot_label":      {"ru": "Поворот, °",             "en": "Rotation, °"},
-    "rot_help":       {"ru": "Угол поворота решётки вокруг центра прямоугольника (°, против часовой стрелки)",
-                       "en": "Lattice rotation angle around rectangle center (°, CCW)"},
+    "rot_help":       {"ru": "Угол поворота решётки вокруг левого нижнего угла (0,0) (°, против часовой стрелки)"},
     "rot_section":    {"ru": "🔄 Поворот",             "en": "🔄 Rotation"},
     "mm":             {"ru": " мм",  "en": " mm"},
     "mm2":            {"ru": " мм²", "en": " mm²"},
     "mm3":            {"ru": " мм³", "en": " mm³"},
     "g":              {"ru": " г",   "en": " g"},
     "gcm3":           {"ru": " г/см³", "en": " g/cm³"},
-    "auxetic_yes":    {"ru": "ауксетик ✓", "en": "auxetic ✓"},
-    "auxetic_no":     {"ru": "не ауксетик ✗", "en": "non-auxetic ✗"},
 }
 
 # Инициализация языка в session_state
@@ -103,6 +88,41 @@ if 'lang_toggle' in st.session_state:
     st.session_state['lang'] = 'en' if st.session_state['lang_toggle'] else 'ru'
 elif 'lang' not in st.session_state:
     st.session_state['lang'] = 'ru'
+
+# --- ИНИЦИАЛИЗАЦИЯ И СВЯЗЫВАНИЕ ДИНАМИЧЕСКИХ ПАРАМЕТРОВ ---
+if 'base_L' not in st.session_state:
+    st.session_state['base_L'] = 3.0
+    st.session_state['base_S'] = 1.5
+    st.session_state['base_h'] = 0.4
+    st.session_state['last_scale'] = 1.0
+
+if 'scale' not in st.session_state:
+    st.session_state['scale'] = 1.0
+if 'L' not in st.session_state:
+    st.session_state['L'] = st.session_state['base_L']
+if 'S' not in st.session_state:
+    st.session_state['S'] = st.session_state['base_S']
+if 'h' not in st.session_state:
+    st.session_state['h'] = st.session_state['base_h']
+if 'frame_th' not in st.session_state:
+    st.session_state['frame_th'] = st.session_state['h']
+
+def on_scale_changed():
+    """Callback-функция: пересчитывает L, S, h и рамку при изменении масштаба."""
+    new_scale = st.session_state['scale']
+    st.session_state['L'] = round(st.session_state['base_L'] * new_scale, 3)
+    st.session_state['S'] = round(st.session_state['base_S'] * new_scale, 3)
+    st.session_state['h'] = round(st.session_state['base_h'] * new_scale, 3)
+    st.session_state['frame_th'] = round(st.session_state['base_h'] * new_scale, 3)
+    st.session_state['last_scale'] = new_scale
+
+def on_geometry_changed():
+    """Callback-функция: обновление базовых значений ячейки при ручном вводе."""
+    current_scale = st.session_state['scale']
+    if current_scale > 0:
+        st.session_state['base_L'] = st.session_state['L'] / current_scale
+        st.session_state['base_S'] = st.session_state['S'] / current_scale
+        st.session_state['base_h'] = st.session_state['h'] / current_scale
 
 def t(key):
     """Получить перевод строки по ключу для текущего языка."""
@@ -121,27 +141,15 @@ st.markdown("""
                padding-right: 1.5rem !important;
            }
            header { visibility: hidden; }
-
-           /* Уплотнение Streamlit блоков */
-           div[data-testid="stVerticalBlock"] {
-               gap: 0.35rem !important;
-           }
-           div[data-testid="stHorizontalBlock"] {
-               gap: 0.4rem !important;
-           }
-           div[data-testid="stElementContainer"] {
-               margin-bottom: 0px !important;
-           }
-           .stTabs [data-baseweb="tab-list"] {
-               gap: 8px !important;
-           }
+           div[data-testid="stVerticalBlock"] { gap: 0.35rem !important; }
+           div[data-testid="stHorizontalBlock"] { gap: 0.4rem !important; }
+           div[data-testid="stElementContainer"] { margin-bottom: 0px !important; }
+           .stTabs [data-baseweb="tab-list"] { gap: 8px !important; }
            .stTabs [data-baseweb="tab"] {
                padding-top: 4px !important;
                padding-bottom: 4px !important;
                font-size: 0.85rem !important;
            }
-
-             /* Сделать поля ввода компактнее по высоте и выровнять */
               div[data-testid="stNumberInputContainer"],
               [data-testid="stNumberInput"] > div {
                   height: 28px !important;
@@ -184,8 +192,6 @@ st.markdown("""
                   align-items: center !important;
                   justify-content: center !important;
               }
-              
-              /* Заголовки секций */
              .section-header {
                  margin-top: 8px !important;
                  margin-bottom: 0px !important;
@@ -195,23 +201,8 @@ st.markdown("""
                  border-bottom: 1px solid #464b5d;
                  padding-bottom: 5px;
              }
-
-           /* Горизонтальное расположение подписи и поля */
-           .label-col {
-               font-size: 0.85rem;
-               color: #9ea4b0;
-               padding-top: 4px;
-           }
-
-           /* СЕТКА ХАРАКТЕРИСТИК (3 столбца) */
-           .metrics-grid {
-               display: grid;
-               grid-template-columns: repeat(3, 1fr);
-               gap: 6px;
-               margin-bottom: 10px;
-           }
-
-           /* КАРТОЧКИ ХАРАКТЕРИСТИК */
+           .label-col { font-size: 0.85rem; color: #9ea4b0; padding-top: 4px; }
+           .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
            .metric-box {
                background-color: #1e2129;
                border: 1px solid #3d4455;
@@ -226,8 +217,6 @@ st.markdown("""
            .m-label { color: #9ea4b0; font-size: 0.62rem; text-transform: uppercase; line-height: 1.1; margin-bottom: 2px; }
            .m-value { color: #ffffff; font-size: 0.85rem; font-weight: bold; font-family: 'Consolas', monospace; }
            .m-unit { font-size: 0.6rem; color: #5c88be; margin-left: 1px; }
-
-            /* Выравнивание переключателя языка */
             div[data-testid="stCheckbox"], div[data-testid="stToggle"] {
                 display: flex !important;
                 justify-content: center !important;
@@ -235,45 +224,19 @@ st.markdown("""
                 margin-top: 0px !important;
                 height: 28px !important;
             }
-            .lang-label-ru {
-                font-size: 0.85rem;
-                font-weight: bold;
-                height: 28px;
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-            }
-            .lang-label-en {
-                font-size: 0.85rem;
-                font-weight: bold;
-                height: 28px;
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-            }
-
-           /* Стили для подписи в правой колонке */
-           .column-footer {
-               text-align: center; color: #808495; padding-top: 10px;
-               font-size: 0.75rem; border-top: 1px solid #464b5d; margin-top: 10px;
-           }
-
-           /* Уплотнение кнопок в левой колонке */
-           .stButton > button {
-               margin-bottom: -10px;
-           }
+            .lang-label-ru { font-size: 0.85rem; font-weight: bold; height: 28px; display: flex; align-items: center; justify-content: flex-end; }
+            .lang-label-en { font-size: 0.85rem; font-weight: bold; height: 28px; display: flex; align-items: center; justify-content: flex-start; }
+           .column-footer { text-align: center; color: #808495; padding-top: 10px; font-size: 0.75rem; border-top: 1px solid #464b5d; margin-top: 10px; }
+           .stButton > button { margin-bottom: -10px; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- ГЕОМЕТРИЧЕСКИЙ БЛОК ---
 
 def validate_cell_geometry(L, S, h, alpha_deg, scale):
-    """
-    Проверяет элементарную ячейку на самопересечение, вырождение и выходы за рамки здравого смысла.
-    Возвращает (is_valid, error_message).
-    """
+    """Проверяет элементарную ячейку на корректность."""
     if L <= 0.0 or S <= 0.0 or h <= 0.0 or scale <= 0.0:
-        return False, "Параметры L, S, h и Масштаб должны быть строго больше нуля / Parameters L, S, h, and Scale must be strictly greater than zero"
+        return False, "Параметры L, S, h и Масштаб должны быть строго больше нуля"
 
     if alpha_deg <= 0.0 or alpha_deg >= 180.0:
         return False, "Угол Alpha должен быть в пределах от 0° до 180°"
@@ -291,14 +254,7 @@ def validate_cell_geometry(L, S, h, alpha_deg, scale):
         points, _ = get_base_unit(L, S, h, alpha_deg, scale)
         poly = Polygon(points)
         if not poly.is_valid:
-            from shapely.validation import explain_validity
-            reason = explain_validity(poly)
-            reason_ru = reason
-            if "Self-intersection" in reason:
-                reason_ru = "Пересечение стенок элементарной ячейки (избыточная толщина h или критический угол Alpha)"
-            elif "Ring Self-intersection" in reason:
-                reason_ru = "Самопересечение внешнего контура ячейки"
-            return False, f"Геометрическая коллизия: {reason_ru}"
+            return False, "Геометрическая коллизия: Самопересечение стенок элементарной ячейки"
         return True, ""
     except Exception as e:
         return False, f"Ошибка расчета геометрии: {str(e)}"
@@ -306,25 +262,7 @@ def validate_cell_geometry(L, S, h, alpha_deg, scale):
 
 @st.cache_data
 def get_base_unit(L, S, h, alpha_deg, scale):
-    """
-    Рассчитывает координаты вершин элементарной ячейки (re-entrant honeycomb).
-
-    Система координат: центр ячейки по Y = 0; ячейка симметрична относительно оси X.
-    Вершины обходятся против часовой стрелки.
-
-    Параметры:
-        L (float): Длина горизонтального ребра (до масштабирования).
-        S (float): Длина наклонного ребра (до масштабирования).
-        h (float): Толщина стенок (до масштабирования).
-        alpha_deg (float): Угол наклона ребра, °. При alpha < 90° — ауксетик.
-        scale (float): Глобальный масштабный коэффициент.
-
-    Вывод точки x5 (правый угол ячейки):
-        x5 получается из геометрического условия: правый конец нижней горизонтальной
-        стенки (y=0) должен лежать на продолжении линии наклонного ребра с учётом
-        его толщины hs. Формула выведена из уравнения прямой наклонного ребра:
-        x5 = Ls + hs * (2 + cos α) / (2 * sin α)
-    """
+    """Рассчитывает координаты вершин элементарной ячейки (re-entrant honeycomb)."""
     Ls, Ss, hs = L * scale, S * scale, h * scale
     alpha = np.radians(alpha_deg)
     x1, y1 = 0, hs / 2.0
@@ -333,7 +271,6 @@ def get_base_unit(L, S, h, alpha_deg, scale):
     y3 = hs / 2.0 + Ss * np.sin(alpha)
     x4 = x3 + hs * np.sin(alpha)
     y4 = y3 + hs * np.cos(alpha)
-    # Правый угол ячейки (y=0): геометрический вывод см. в docstring.
     x5 = Ls + (hs * (2 + np.cos(alpha))) / (2 * np.sin(alpha))
     y5 = 0
     top = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4], [x5, y5]])
@@ -343,11 +280,7 @@ def get_base_unit(L, S, h, alpha_deg, scale):
 
 
 def _extract_polygon_coords(geom, min_area=1e-4):
-    """
-    Извлекает список массивов координат из геометрии Shapely.
-    Обрабатывает Polygon, MultiPolygon и GeometryCollection.
-    Возвращает список np.array вершин (без дублирующей замыкающей точки).
-    """
+    """Извлекает список массивов координат из геометрии Shapely."""
     results = []
     if geom is None or geom.is_empty:
         return results
@@ -367,66 +300,43 @@ def _extract_polygon_coords(geom, min_area=1e-4):
 
 @st.cache_data
 def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame_th, rotation=0.0):
-    """
-    Генерирует полную сетку структуры с поворотом и обрезкой по прямоугольнику.
-
-    Подход (intersect + clip):
-      — Генерируем расширенную сетку, покрывающую описанную окружность прямоугольника.
-      — Поворачиваем каждую ячейку вокруг центра прямоугольника.
-      — Берём ВСЕ ячейки, которые хотя бы частично пересекаются с прямоугольником.
-      — Обрезаем каждую ячейку операцией intersection — получаем точный контур
-        с плоскими срезами на границе прямоугольника.
-      — Обрезанные полигоны передаются в STL: плоские срезы автоматически
-        образуют вертикальные плоские грани в 3D-модели.
-    """
+    """Генерирует сетку структуры с привязкой по осям горизонтального основания (x=0, y=0)."""
     points, scaled = get_base_unit(L, S, h, alpha, scale)
     Ls, Ss, hs = scaled
     alpha_r = np.radians(alpha)
 
-    # Шаги тесселяции
     cx_step = (Ls - Ss * np.cos(alpha_r)) + (hs / 2.0) * np.sin(alpha_r)
     cy_step = (hs / 2.0 + Ss * np.sin(alpha_r)) + (hs / 2.0) * np.cos(alpha_r)
     w_step, v_step = 2 * cx_step, 2 * cy_step
 
-    # Расширенная сетка: покрывает описанную окружность прямоугольника
-    # (+1 ячейка запаса на каждую сторону, чтобы захватить крайние частичные ячейки)
-    r_circ = np.sqrt(target_B ** 2 + target_A ** 2) / 2.0
-    expanded = 2.0 * r_circ + 2.0 * max(w_step, v_step)
-    nx = max(2, ((int(np.ceil(expanded / w_step)) + 1) // 2) * 2)
-    ny = max(1, (int(np.ceil(expanded / v_step)) // 2) * 2 + 1)
-
-    # Центрируем сетку относительно центра прямоугольника
-    rect_cx = target_B / 2.0
-    rect_cy = target_A / 2.0
-    grid_w = nx * w_step
-    grid_h = ny * v_step
-    offset_x = rect_cx - grid_w / 2.0
-    offset_y = rect_cy - grid_h / 2.0
-
-    # Матрица поворота (CCW)
-    theta = np.radians(rotation)
-    cos_t, sin_t = np.cos(theta), np.sin(theta)
-
-    def rotate_unit(u):
-        """Поворот массива вершин вокруг центра прямоугольника."""
-        dx = u[:, 0] - rect_cx
-        dy = u[:, 1] - rect_cy
-        rx = rect_cx + dx * cos_t - dy * sin_t
-        ry = rect_cy + dx * sin_t + dy * cos_t
-        return np.column_stack([rx, ry])
-
-    # Граница для обрезки (ось-выровненный прямоугольник)
     bounding_rect = Polygon([
         (0, 0), (target_B, 0), (target_B, target_A), (0, target_A)
     ])
 
-    # --- Основной цикл: intersect + clip ---
-    all_units_coords = []   # список np.array вершин (обрезанных)
-    polygons_lattice = []   # список Shapely Polygon (обрезанных)
-    n_e_original = 0        # счётчик исходных (до обрезки) ячеек
+    # ТРЕБОВАНИЕ: Центровка нижней грани по оси горизонтального основания ячейки
+    offset_x = 0.0
+    offset_y = 0.0  # Ось горизонтального ребра ячейки теперь совпадает с y = 0
 
-    for i in range(nx):
-        for j in range(ny):
+    r_circ = np.sqrt(target_B ** 2 + target_A ** 2)
+    nx = max(4, int(np.ceil((target_B + r_circ) / w_step)) + 2)
+    ny = max(4, int(np.ceil((target_A + r_circ) / v_step)) + 2)
+    
+    start_x = -int(np.ceil(r_circ / w_step))
+    start_y = -int(np.ceil(r_circ / v_step))
+
+    theta = np.radians(rotation)
+    cos_t, sin_t = np.cos(theta), np.sin(theta)
+
+    def rotate_around_origin(u):
+        rx = u[:, 0] * cos_t - u[:, 1] * sin_t
+        ry = u[:, 0] * sin_t + u[:, 1] * cos_t
+        return np.column_stack([rx, ry])
+
+    polygons_lattice = []
+    n_e_original = 0
+
+    for i in range(start_x, nx):
+        for j in range(start_y, ny):
             u = points.copy()
             if (i + j) % 2 == 0:
                 u[:, 0] = 2 * cx_step - u[:, 0]
@@ -434,44 +344,42 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
             u[:, 1] += j * v_step + offset_y
 
             if abs(rotation) > 1e-6:
-                u = rotate_unit(u)
+                u = rotate_around_origin(u)
 
             cell_poly = Polygon(u)
 
-            # Пропускаем вырожденные полигоны
             if not cell_poly.is_valid or cell_poly.is_empty:
                 cell_poly = cell_poly.buffer(0)
                 if cell_poly.is_empty:
                     continue
 
-            # Быстрая проверка: хотя бы частичное пересечение с прямоугольником
             if not bounding_rect.intersects(cell_poly):
                 continue
 
             n_e_original += 1
 
-            # Обрезка ячейки по границе прямоугольника
             clipped = bounding_rect.intersection(cell_poly)
             if not clipped.is_valid:
                 clipped = clipped.buffer(0)
+                
+            if not clipped.is_empty:
+                if clipped.geom_type == 'Polygon':
+                    polygons_lattice.append(clipped)
+                elif clipped.geom_type in ('MultiPolygon', 'GeometryCollection'):
+                    for part in clipped.geoms:
+                        if part.geom_type == 'Polygon':
+                            polygons_lattice.append(part)
 
-            # Извлекаем координаты из результата (может быть Polygon или MultiPolygon)
-            for coords in _extract_polygon_coords(clipped):
-                all_units_coords.append(coords)
-                polygons_lattice.append(Polygon(coords))
-
-    # Если ни одна ячейка не пересеклась — возвращаем пустую структуру
-    if not all_units_coords:
+    if not polygons_lattice:
         return (
             [], 0.0, target_B, target_A, target_B * target_A,
             0.0, target_B, target_A, target_B * target_A, 0
         )
 
-    # Метрики решётки — по прямоугольнику (не по bbox ячеек)
     f_w_lattice = target_B
     f_h_lattice = target_A
     s_eff_lattice = f_w_lattice * f_h_lattice
-    n_e = n_e_original  # считаем исходные ячейки (до разбиения MultiPolygon)
+    n_e = n_e_original
 
     try:
         union_poly_lattice = unary_union(polygons_lattice)
@@ -479,8 +387,6 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
     except Exception:
         s_real_lattice = sum(p.area for p in polygons_lattice)
 
-    # Инициализация переменных полной модели
-    all_units_out = list(all_units_coords)
     polygons_total = list(polygons_lattice)
     f_w_total = f_w_lattice
     f_h_total = f_h_lattice
@@ -488,11 +394,6 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
     s_real_total = s_real_lattice
 
     if add_frame:
-        # Рамка всегда выровнена по осям прямоугольника [0,B]x[0,A].
-        # НАМЕРЕННО: рамка НЕ поворачивается вместе с решёткой — она образует
-        # фиксированную прямоугольную обойму, независимую от угла поворота решётки.
-        # Это позволяет использовать рамку как посадочный элемент с гарантированными
-        # прямыми гранями (для пресс-форм, соединений и т.д.).
         offset = frame_th / 2.0
         out_min_y = -offset
         in_min_y  = offset
@@ -508,20 +409,17 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
         rect_L_arr = np.array([[out_min_x, in_min_y],  [in_min_x,  in_min_y],  [in_min_x,  in_max_y],  [out_min_x, in_max_y]])
         rect_R_arr = np.array([[in_max_x,  in_min_y],  [out_max_x, in_min_y],  [out_max_x, in_max_y],  [in_max_x,  in_max_y]])
 
-        frame_coords = [rect_B_arr, rect_T_arr, rect_L_arr, rect_R_arr]
-        all_units_out.extend(frame_coords)
-        for rc in frame_coords:
-            polygons_total.append(Polygon(rc))
-
+        frame_polys = [Polygon(rect_B_arr), Polygon(rect_T_arr), Polygon(rect_L_arr), Polygon(rect_R_arr)]
+        polygons_total.extend(frame_polys)
+        
+        s_real_total = s_real_lattice + sum(p.area for p in frame_polys)
         f_w_total = out_max_x - out_min_x
         f_h_total = out_max_y - out_min_y
         s_eff_total = f_w_total * f_h_total
 
-        try:
-            union_poly_total = unary_union(polygons_total)
-            s_real_total = union_poly_total.area
-        except Exception:
-            s_real_total = s_real_lattice + sum(Polygon(rc).area for rc in frame_coords)
+    all_units_out = []
+    for p in polygons_total:
+        all_units_out.extend(_extract_polygon_coords(p))
 
     return (
         all_units_out,
@@ -533,18 +431,11 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
 
 @st.cache_data
 def generate_stl(all_units, depth):
-    """
-    Оптимизированная векторизованная генерация STL-сетки.
-    Работает с произвольным числом вершин (в т.ч. обрезанными ячейками).
-
-    Возвращает объект numpy-stl Mesh (не сохраняет ничего на диск).
-    """
+    """Оптимизированная векторизованная генерация STL-сетки."""
     if not all_units:
         raise ValueError("Нет геометрии для генерации STL")
 
     all_face_blocks = []
-    triangulation_warnings = []
-
     for pts in all_units:
         num_pts = len(pts)
         if num_pts < 3:
@@ -553,52 +444,38 @@ def generate_stl(all_units, depth):
         p_bot = np.hstack([pts, np.zeros((num_pts, 1))])
         p_top = np.hstack([pts, np.full((num_pts, 1), depth)])
 
-        # Боковые грани (2 треугольника на сегмент)
         k_indices = np.arange(num_pts)
         next_k_indices = (k_indices + 1) % num_pts
 
         t1 = np.stack([p_bot[k_indices], p_bot[next_k_indices], p_top[next_k_indices]], axis=1)
         t2 = np.stack([p_bot[k_indices], p_top[next_k_indices], p_top[k_indices]], axis=1)
-
         unit_faces = [t1, t2]
 
-        # Триангуляция крышек через tripy
         polygon_vertices = [tuple(p) for p in pts]
         try:
             triangles = tripy.earclip(polygon_vertices)
             if triangles:
-                tri_arr = np.array(triangles)  # (N, 3, 2)
-
+                tri_arr = np.array(triangles)
                 b_tri = np.zeros((len(triangles), 3, 3))
-                b_tri[:, :, :2] = tri_arr[:, [0, 2, 1], :]  # нижняя: порядок вершин реверсирован
-
+                b_tri[:, :, :2] = tri_arr[:, [0, 2, 1], :]
                 t_tri = np.zeros((len(triangles), 3, 3))
-                t_tri[:, :, :2] = tri_arr[:, [0, 1, 2], :]  # верхняя
+                t_tri[:, :, :2] = tri_arr[:, [0, 1, 2], :]
                 t_tri[:, :, 2] = depth
-
                 unit_faces.append(b_tri)
                 unit_faces.append(t_tri)
-        except Exception as e:
-            # Крышки для данного полигона пропущены; боковые грани сохраняются.
-            triangulation_warnings.append(f"Полигон ({num_pts} вершин): {e}")
+        except Exception:
+            pass
 
         all_face_blocks.append(np.concatenate(unit_faces, axis=0))
 
     if not all_face_blocks:
         raise ValueError("STL: не удалось построить ни одного полигона")
 
-    if triangulation_warnings:
-        st.warning(
-            f"⚠️ Триангуляция крышек не выполнена для {len(triangulation_warnings)} полигона(ов). "
-            "Боковые грани сохранены. Попробуйте уменьшить угол поворота или толщину."
-        )
-
     faces_array = np.concatenate(all_face_blocks, axis=0)
     model = mesh.Mesh(np.zeros(faces_array.shape[0], dtype=mesh.Mesh.dtype))
     model.vectors = faces_array
     model.update_normals()
     return model
-
 
 
 def create_3d_plot(stl_mesh):
@@ -619,16 +496,8 @@ def create_3d_plot(stl_mesh):
         )
     ])
     fig.update_layout(
-        scene=dict(
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False),
-            zaxis=dict(visible=False),
-            aspectmode='data'
-        ),
-        margin=dict(l=0, r=0, b=0, t=0),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=420
+        scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectmode='data'),
+        margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=420
     )
     return fig
 
@@ -640,46 +509,64 @@ col_params, col_plot, col_metrics = st.columns([1.0, 3.0, 1.2])
 with col_params:
     st.markdown(f'<div class="section-header">{t("cell_params")}</div><div style="height: 12px;"></div>', unsafe_allow_html=True)
 
-    def compact_input(label, min_v, max_v, def_v, step, key, help_text=""):
+    def compact_input(label, min_v, max_v, step, key, help_text="", on_change=None):
         c1, c2 = st.columns([1.1, 1.0])
         tooltip_attr = f'title="{help_text}"' if help_text else ""
         icon = " ⓘ" if help_text else ""
         c1.markdown(f'<div class="label-col" {tooltip_attr}>{label}{icon}</div>', unsafe_allow_html=True)
-        return c2.number_input(label, min_v, max_v, def_v, step, key=key, label_visibility="collapsed")
+        return c2.number_input(label, min_v, max_v, step=step, key=key, on_change=on_change, label_visibility="collapsed")
 
-    L_v  = compact_input(t("L_label"),     0.5,   50.0,  3.0,  0.1,  "L",        t("L_help"))
-    S_v  = compact_input(t("S_label"),     0.5,   50.0,  1.5,  0.1,  "S",        t("S_help"))
-    h_v  = compact_input(t("h_label"),    0.01,   10.0,  0.4,  0.05, "h",        t("h_help"))
-    a_v  = compact_input(t("alpha_label"), 10.0, 170.0, 60.0,  1.0,  "alpha",    t("alpha_help"))
-    sc_v = compact_input(t("scale_label"), 0.01,  20.0,  1.0,  0.1,  "scale",    t("scale_help"))
+    L_v  = compact_input(t("L_label"),     0.5,   50.0,  0.1,  "L",     t("L_help"),     on_change=on_geometry_changed)
+    S_v  = compact_input(t("S_label"),     0.5,   50.0,  0.1,  "S",     t("S_help"),     on_change=on_geometry_changed)
+    h_v  = compact_input(t("h_label"),    0.01,   10.0,  0.05, "h",     t("h_help"),     on_change=on_geometry_changed)
+    
+    c1_a, c2_a = st.columns([1.1, 1.0])
+    c1_a.markdown(f'<div class="label-col" title="{t("alpha_help")}">{t("alpha_label")} ⓘ</div>', unsafe_allow_html=True)
+    a_v = c2_a.number_input(t("alpha_label"), 10.0, 170.0, 60.0, 1.0, key="alpha", label_visibility="collapsed")
+
+    sc_v = compact_input(t("scale_label"), 0.01,  20.0,  0.1,  "scale", t("scale_help"), on_change=on_scale_changed)
 
     st.markdown(f'<div class="section-header">{t("model_params")}</div><div style="height: 12px;"></div>', unsafe_allow_html=True)
-    target_B  = compact_input(t("width_label"),  5.0, 5000.0,  70.0, 1.0,  "tB",  t("width_help"))
-    target_A  = compact_input(t("height_label"), 5.0, 5000.0,  40.0, 1.0,  "tA",  t("height_help"))
-    z_depth   = compact_input(t("depth_label"),  0.1, 2000.0,  70.0, 1.0,  "zD",  t("depth_help"))
-    ro_real_v = compact_input(t("ro_label"),     0.01,  20.0,  1.15, 0.01, "ro",  t("ro_help"))
-    rot_v     = compact_input(t("rot_label"), -180.0, 180.0, 0.0, 1.0, "rot", t("rot_help"))
+    
+    c1_w, c2_w = st.columns([1.1, 1.0])
+    c1_w.markdown(f'<div class="label-col" title="{t("width_help")}">{t("width_label")} ⓘ</div>', unsafe_allow_html=True)
+    target_B = c2_w.number_input(t("width_label"), 5.0, 5000.0, 50.0, 1.0, key="tB", label_visibility="collapsed")
 
-    # Рамка помещается непосредственно в параметры модели
+    c1_h, c2_h = st.columns([1.1, 1.0])
+    c1_h.markdown(f'<div class="label-col" title="{t("height_help")}">{t("height_label")} ⓘ</div>', unsafe_allow_html=True)
+    target_A = c2_h.number_input(t("height_label"), 5.0, 5000.0, 70.0, 1.0, key="tA", label_visibility="collapsed")
+
+    c1_d, c2_d = st.columns([1.1, 1.0])
+    c1_d.markdown(f'<div class="label-col" title="{t("depth_help")}">{t("depth_label")} ⓘ</div>', unsafe_allow_html=True)
+    z_depth = c2_d.number_input(t("depth_label"), 0.1, 2000.0, 70.0, 1.0, key="zD", label_visibility="collapsed")
+
+    c1_ro, c2_ro = st.columns([1.1, 1.0])
+    c1_ro.markdown(f'<div class="label-col" title="{t("ro_help")}">{t("ro_label")} ⓘ</div>', unsafe_allow_html=True)
+    ro_real_v = c2_ro.number_input(t("ro_label"), 0.01, 20.0, 1.15, 0.01, key="ro", label_visibility="collapsed")
+
+    c1_rt, c2_rt = st.columns([1.1, 1.0])
+    c1_rt.markdown(f'<div class="label-col" title="{t("rot_help")}">{t("rot_section")} ⓘ</div>', unsafe_allow_html=True)
+    rot_v = c2_rt.number_input(t("rot_label"), -180.0, 180.0, 0.0, 1.0, key="rot", label_visibility="collapsed")
+
     add_frame = st.checkbox(t("enable_frame"), value=True)
     frame_th = 0.0
     if add_frame:
-        frame_th = compact_input(t("frame_th"), 0.01, 50.0, float(h_v), 0.05, "frame_th", t("frame_th_help"))
+        frame_th = compact_input(t("frame_th"), 0.01, 50.0, 0.05, "frame_th", t("frame_th_help"))
 
-    # Валидация геометрических параметров
+    # Валидация
     is_geom_valid, geom_error = validate_cell_geometry(L_v, S_v, h_v, a_v, sc_v)
     if is_geom_valid:
         if target_B <= 0.0 or target_A <= 0.0 or z_depth <= 0.0 or ro_real_v <= 0.0:
             is_geom_valid = False
-            geom_error = "Параметры ширины, высоты, глубины и плотности должны быть больше нуля / Dimensions (width, height, depth) and density must be greater than zero"
+            geom_error = "Параметры ширины, высоты, глубины и плотности должны быть больше нуля"
         elif add_frame and frame_th <= 0.0:
             is_geom_valid = False
-            geom_error = "Толщина рамки должна быть больше нуля / Frame thickness must be greater than zero"
+            geom_error = "Толщина рамки должна быть больше нуля"
 
     if not is_geom_valid:
         st.error(geom_error)
 
-    # Вычисление геометрии (кэшируется)
+    # Расчет
     if is_geom_valid:
         (
             all_units_coords,
@@ -695,13 +582,11 @@ with col_params:
         s_real_total = f_w_total = f_h_total = s_eff_total = 0.0
         n_e = 0
 
-    # Выбираем активные размеры и площади в зависимости от включения рамки
     active_w     = f_w_total     if add_frame else f_w_lattice
     active_h     = f_h_total     if add_frame else f_h_lattice
     active_s_eff = s_eff_total   if add_frame else s_eff_lattice
     active_s_real = s_real_total if add_frame else s_real_lattice
 
-    # Хеш текущих параметров для отслеживания устаревшей 3D-модели
     _param_hash = hash((L_v, S_v, h_v, a_v, sc_v, target_B, target_A, z_depth, add_frame, frame_th, rot_v))
 
     st.write("")
@@ -709,7 +594,6 @@ with col_params:
         with st.spinner(t("generating")):
             try:
                 stl_mesh = generate_stl(all_units_coords, z_depth)
-                # Сохраняем только в памяти — запись на диск не выполняется
                 stl_buf = io.BytesIO()
                 stl_mesh.save("auxetic.stl", fh=stl_buf)
                 st.session_state['stl_ready'] = stl_buf.getvalue()
@@ -730,50 +614,35 @@ with col_params:
 # --- ЦЕНТРАЛЬНАЯ КОЛОНКА ---
 with col_plot:
     st.markdown(f'<div class="section-header">{t("structure")}</div>', unsafe_allow_html=True)
-
     tab1, tab2 = st.tabs([t("tab_2d"), t("tab_3d")])
 
     with tab1:
         fig = go.Figure()
-
-        # Контур неподвижного прямоугольника (граница обрезки) — красная штриховая линия
+        
+        # Габаритная граница модели
         bx = [0, target_B, target_B, 0, 0]
         by = [0, 0, target_A, target_A, 0]
         fig.add_trace(go.Scatter(
-            x=bx, y=by,
-            mode='lines',
-            line=dict(color='#ff6b6b', width=1.5, dash='dash'),
-            name='boundary',
-            hoverinfo='skip'
+            x=bx, y=by, mode='lines', line=dict(color='#ff6b6b', width=1.5, dash='dash'), name='boundary', hoverinfo='skip'
         ))
 
-        # Ячейки решётки (обрезанные по границе прямоугольника)
-        x_all, y_all = [], []
+        # Отрисовка пореберных ячеек и отдельных кусков рамок
         for u in all_units_coords:
-            x_all.extend(u[:, 0].tolist() + [u[0, 0]] + [None])
-            y_all.extend(u[:, 1].tolist() + [u[0, 1]] + [None])
-
-        if x_all:
             fig.add_trace(go.Scatter(
-                x=x_all, y=y_all,
+                x=u[:, 0].tolist() + [u[0, 0]],
+                y=u[:, 1].tolist() + [u[0, 1]],
                 fill="toself",
                 mode="lines",
-                line=dict(color='#333333', width=1),
+                line=dict(color='#111111', width=0.8),
                 fillcolor='#5c88be',
                 hoverinfo='skip'
             ))
 
         fig.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            margin=dict(l=0, r=0, t=10, b=0),
-            showlegend=False,
-            xaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False,
-                       scaleanchor="y", scaleratio=1),
-            yaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False),
-            height=420
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", margin=dict(l=0, r=0, t=10, b=0), showlegend=False,
+            xaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False, scaleanchor="y", scaleratio=1),
+            yaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False), height=420
         )
-
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     with tab2:
@@ -784,9 +653,8 @@ with col_plot:
         else:
             st.info(t("3d_empty"))
 
-# --- ПРАВАЯ КОЛОНКА (ХАРАКТЕРИСТИКИ И ПОДПИСЬ) ---
+# --- ПРАВАЯ КОЛОНКА (ХАРАКТЕРИСТИКИ) ---
 with col_metrics:
-    # --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (перенесен в правый верхний угол страницы) ---
     hdr_cols = st.columns([1.5, 2.0])
     with hdr_cols[0]:
         st.markdown(f'<div class="section-header" style="border-bottom:none; margin:0; padding:0; line-height:2.2;">{t("metrics")}</div>', unsafe_allow_html=True)
@@ -795,12 +663,9 @@ with col_metrics:
         is_en = (st.session_state.get('lang', 'ru') == 'en')
         ru_color = "#ffffff" if not is_en else "#6f7380"
         en_color = "#ffffff" if is_en else "#6f7380"
-        with lang_cols[0]:
-            st.markdown(f'<div class="lang-label-ru" style="color: {ru_color};">рус</div>', unsafe_allow_html=True)
-        with lang_cols[1]:
-            st.toggle("", value=is_en, key="lang_toggle", label_visibility="collapsed")
-        with lang_cols[2]:
-            st.markdown(f'<div class="lang-label-en" style="color: {en_color};">EN</div>', unsafe_allow_html=True)
+        with lang_cols[0]: st.markdown(f'<div class="lang-label-ru" style="color: {ru_color};">рус</div>', unsafe_allow_html=True)
+        with lang_cols[1]: st.toggle("", value=is_en, key="lang_toggle", label_visibility="collapsed")
+        with lang_cols[2]: st.markdown(f'<div class="lang-label-en" style="color: {en_color};">EN</div>', unsafe_allow_html=True)
     st.markdown('<div style="border-bottom: 1px solid #464b5d; margin-top: 2px; margin-bottom: 12px;"></div>', unsafe_allow_html=True)
 
     def metric_card(label, value, unit="", tooltip="", style=""):
@@ -811,7 +676,6 @@ with col_metrics:
                 f'<div class="m-value">{value}<span class="m-unit">{unit}</span></div>'
                 f'</div>')
 
-    # Вычисление производных параметров
     s_e_cell           = s_real_lattice / n_e if n_e > 0 else 0
     volume_total       = s_real_total * z_depth
     sample_mass        = volume_total * ro_real_v * 0.001
@@ -820,34 +684,28 @@ with col_metrics:
     _alpha_r = np.radians(a_v)
     _sin_a   = np.sin(_alpha_r)
     _cos_a   = np.cos(_alpha_r)
-    _ratio   = S_v / L_v  # r = S/L (наклонное/горизонтальное)
-    # Аналитическая оценка коэффициента Пуассона для re-entrant honeycomb.
-    # Точная формула для осевого нагружения (вдоль оси X) тонкостенных решеток (Gibson & Ashby, 1997):
-    #   ν = -cos(α)·(1 - r·cos α) / (sin²α · r)
-    # где r = S/L.
+    _ratio   = S_v / L_v
     nu_star  = (
         -(_cos_a * (1 - _ratio * _cos_a)) / ((_sin_a ** 2) * _ratio)
         if abs(_sin_a) > 1e-6 and abs(_ratio) > 1e-6 else 0.0
     )
 
     metrics_list = [
-        metric_card(t("m_height"), f"{active_h:.1f}", t("mm"), t("m_height_help")),
-        metric_card(t("m_width"),  f"{active_w:.1f}", t("mm"), t("m_width_help")),
-        metric_card(t("m_seff"),   f"{active_s_eff:.0f}", t("mm2"), t("m_seff_help")),
-        metric_card(t("m_se"),     f"{s_e_cell:.2f}", t("mm2"), t("m_se_help")),
-        metric_card(t("m_ne"),     f"{n_e}", "", t("m_ne_help")),
-        metric_card(t("m_sreal"),  f"{s_real_total:.1f}", t("mm2"), t("m_sreal_help")),
-        metric_card(t("m_volume"), f"{volume_total:.0f}", t("mm3"), t("m_volume_help")),
-        metric_card(t("m_mass"),   f"{sample_mass:.2f}", t("g"), t("m_mass_help")),
-        metric_card(t("m_ro_total"), f"{ro_eff_total_percent:.1f}", "%", t("m_ro_total_help")),
-        metric_card(t("m_depth"),   f"{z_depth:.0f}", t("mm"), t("m_depth_help")),
-        metric_card(t("m_ro_mat"),  f"{ro_real_v:.2f}", t("gcm3"), t("m_ro_mat_help")),
-        metric_card(t("m_poisson"), f"{nu_star:.3f}", "", t("m_poisson_help"))
+        metric_card(t("m_height"), f"{active_h:.1f}", t("mm")),
+        metric_card(t("m_width"),  f"{active_w:.1f}", t("mm")),
+        metric_card(t("m_seff"),   f"{active_s_eff:.0f}", t("mm2")),
+        metric_card(t("m_se"),     f"{s_e_cell:.2f}", t("mm2")),
+        metric_card(t("m_ne"),     f"{n_e}", ""),
+        metric_card(t("m_sreal"),  f"{s_real_total:.1f}", t("mm2")),
+        metric_card(t("m_volume"), f"{volume_total:.0f}", t("mm3")),
+        metric_card(t("m_mass"),   f"{sample_mass:.2f}", t("g")),
+        metric_card(t("m_ro_total"), f"{ro_eff_total_percent:.1f}", "%"),
+        metric_card(t("m_depth"),   f"{z_depth:.0f}", t("mm")),
+        metric_card(t("m_ro_mat"),  f"{ro_real_v:.2f}", t("gcm3")),
+        metric_card(t("m_poisson"), f"{nu_star:.3f}", "")
     ]
-    metrics_html = '<div class="metrics-grid">' + "".join(metrics_list) + '</div>'
-    st.markdown(metrics_html, unsafe_allow_html=True)
+    st.markdown('<div class="metrics-grid">' + "".join(metrics_list) + '</div>', unsafe_allow_html=True)
 
-    # Схема элементарной ячейки под метриками без спойлера
     _scheme_path = Path(__file__).parent / "scheme.png"
     if _scheme_path.exists():
         st.markdown(f'<div class="section-header">{t("scheme")}</div><div style="height: 8px;"></div>', unsafe_allow_html=True)
