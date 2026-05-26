@@ -26,7 +26,7 @@ TRANSLATIONS = {
     "L_label":        {"ru": "L, мм (Основание)",      "en": "L, mm (Base)"},
     "S_label":        {"ru": "S, мм (Наклон)",         "en": "S, mm (Strut)"},
     "h_label":        {"ru": "h, мм (Толщина)",        "en": "h, mm (Thickness)"},
-    "alpha_label":    {"ru": "a (°)",                   "en": "a (°)"},
+    "alpha_label":    {"ru": "a (°)",                    "en": "a (°)"},
     "L_help":         {"ru": "Длина горизонтального ребра элементарной ячейки (мм)",
                        "en": "Horizontal rib length of unit cell (mm)"},
     "S_help":         {"ru": "Длина наклонного ребра элементарной ячейки (мм)",
@@ -34,10 +34,10 @@ TRANSLATIONS = {
     "h_help":         {"ru": "Толщина стенок структуры (мм)",  "en": "Wall thickness (mm)"},
     "alpha_help":     {"ru": "Внутренний угол наклона ребер (для ауксетиков < 90°)",
                        "en": "Re-entrant angle (auxetic if < 90°)"},
-    "scale_label":    {"ru": "Масштаб",                 "en": "Scale"},
+    "keep_prop_label": {"ru": "Сохранять пропорции",    "en": "Keep proportions"},
+    "keep_prop_help":  {"ru": "Связать параметры L, S и h для пропорционального изменения", 
+                       "en": "Link L, S, and h for proportional scaling"},
     "ro_label":       {"ru": "Плотность Ro, г/см³",    "en": "Density Ro, g/cm³"},
-    "scale_help":     {"ru": "Масштабный коэффициент всей геометрии",
-                       "en": "Global geometry scale factor"},
     "width_label":    {"ru": "Ширина B, мм",            "en": "Width B, mm"},
     "height_label":   {"ru": "Высота A, мм",            "en": "Height A, mm"},
     "depth_label":    {"ru": "Глубина Z, мм",           "en": "Depth Z, mm"},
@@ -54,7 +54,7 @@ TRANSLATIONS = {
     "generating":     {"ru": "Генерация файлов...",    "en": "Generating files..."},
     "structure":      {"ru": "📈 Структура",            "en": "📈 Structure"},
     "tab_2d":         {"ru": "2D Чертёж",              "en": "2D Drawing"},
-    "tab_3d":         {"ru": "3D Просмотр",            "en": "3D Preview"},
+    "tab_3d":         {"ru": "3D Просмотр",              "en": "3D Preview"},
     "3d_stale":       {"ru": "⚠️ Параметры были изменены. Нажмите '🛠️ Подготовить STL' для обновления 3D модели.",
                        "en": "⚠️ Parameters changed. Click '🛠️ Generate STL' to update the 3D model."},
     "3d_empty":       {"ru": "Сгенерируйте STL (кнопка слева), чтобы увидеть 3D превью.",
@@ -65,17 +65,17 @@ TRANSLATIONS = {
     "m_width":        {"ru": "Ширина B",                "en": "Width B"},
     "m_seff":         {"ru": "S габарита",              "en": "S bound"},
     "m_se":           {"ru": "S ячейки",                "en": "S cell"},
-    "m_ne":           {"ru": "Ячеек N",                 "en": "Cells N"},
+    "m_ne":           {"ru": "Ячеек N",                  "en": "Cells N"},
     "m_sreal":        {"ru": "S структуры",             "en": "S struct"},
-    "m_volume":       {"ru": "Объём",                   "en": "Volume"},
-    "m_mass":         {"ru": "Масса",                   "en": "Mass"},
+    "m_volume":       {"ru": "Объём",                    "en": "Volume"},
+    "m_mass":         {"ru": "Масса",                    "en": "Mass"},
     "m_ro_total":     {"ru": "Заполнение",              "en": "Fill ratio"},
     "m_depth":        {"ru": "Глубина Z",               "en": "Depth Z"},
     "m_ro_mat":       {"ru": "Плотность Ro",            "en": "Density Ro"},
     "m_poisson":      {"ru": "Коэфф. Пуассона",         "en": "Poisson's ratio"},
     "rot_label":      {"ru": "Поворот, °",             "en": "Rotation, °"},
     "rot_help":       {"ru": "Угол поворота решётки вокруг левого нижнего угла (0,0) (°, против часовой стрелки)"},
-    "rot_section":    {"ru": "🔄 Поворот",             "en": "🔄 Rotation"},
+    "rot_section":    {"ru": "🔄 Поворот",              "en": "🔄 Rotation"},
     "mm":             {"ru": " мм",  "en": " mm"},
     "mm2":            {"ru": " мм²", "en": " mm²"},
     "mm3":            {"ru": " мм³", "en": " mm³"},
@@ -90,48 +90,57 @@ elif 'lang' not in st.session_state:
     st.session_state['lang'] = 'ru'
 
 # --- ИНИЦИАЛИЗАЦИЯ И СВЯЗЫВАНИЕ ДИНАМИЧЕСКИХ ПАРАМЕТРОВ ---
-if 'base_L' not in st.session_state:
-    st.session_state['base_L'] = 3.0
-    st.session_state['base_S'] = 1.5
-    st.session_state['base_h'] = 0.4
-    st.session_state['last_scale'] = 1.0
-
-if 'scale' not in st.session_state:
-    st.session_state['scale'] = 1.0
 if 'L' not in st.session_state:
-    st.session_state['L'] = st.session_state['base_L']
+    st.session_state['L'] = 3.0
 if 'S' not in st.session_state:
-    st.session_state['S'] = st.session_state['base_S']
+    st.session_state['S'] = 1.5
 if 'h' not in st.session_state:
-    st.session_state['h'] = st.session_state['base_h']
+    st.session_state['h'] = 0.5
+
+# Буферные переменные для отслеживания шага изменений пропорций
+if 'prev_L' not in st.session_state:
+    st.session_state['prev_L'] = st.session_state['L']
+    st.session_state['prev_S'] = st.session_state['S']
+    st.session_state['prev_h'] = st.session_state['h']
+
 if 'frame_th' not in st.session_state:
     st.session_state['frame_th'] = st.session_state['h']
 
-def on_scale_changed():
-    """Callback-функция: пересчитывает L, S, h и рамку при изменении масштаба."""
-    new_scale = st.session_state['scale']
-    st.session_state['L'] = round(st.session_state['base_L'] * new_scale, 3)
-    st.session_state['S'] = round(st.session_state['base_S'] * new_scale, 3)
-    st.session_state['h'] = round(st.session_state['base_h'] * new_scale, 3)
-    st.session_state['frame_th'] = round(st.session_state['base_h'] * new_scale, 3)
-    st.session_state['last_scale'] = new_scale
+# --- ФУНКЦИИ ОБРАТНОГО ВЫЗОВА ДЛЯ КАСКАДНОГО МАСШТАБИРОВАНИЯ ---
+def on_L_changed():
+    if st.session_state.get('keep_prop', False) and st.session_state['prev_L'] > 0:
+        factor = st.session_state['L'] / st.session_state['prev_L']
+        st.session_state['S'] = float(np.clip(round(st.session_state['prev_S'] * factor, 3), 0.5, 50.0))
+        st.session_state['h'] = float(np.clip(round(st.session_state['prev_h'] * factor, 3), 0.01, 10.0))
+    st.session_state['prev_L'] = st.session_state['L']
+    st.session_state['prev_S'] = st.session_state['S']
+    st.session_state['prev_h'] = st.session_state['h']
 
-def on_geometry_changed():
-    """Callback-функция: обновление базовых значений ячейки при ручном вводе."""
-    current_scale = st.session_state['scale']
-    if current_scale > 0:
-        st.session_state['base_L'] = st.session_state['L'] / current_scale
-        st.session_state['base_S'] = st.session_state['S'] / current_scale
-        st.session_state['base_h'] = st.session_state['h'] / current_scale
+def on_S_changed():
+    if st.session_state.get('keep_prop', False) and st.session_state['prev_S'] > 0:
+        factor = st.session_state['S'] / st.session_state['prev_S']
+        st.session_state['L'] = float(np.clip(round(st.session_state['prev_L'] * factor, 3), 0.5, 50.0))
+        st.session_state['h'] = float(np.clip(round(st.session_state['prev_h'] * factor, 3), 0.01, 10.0))
+    st.session_state['prev_L'] = st.session_state['L']
+    st.session_state['prev_S'] = st.session_state['S']
+    st.session_state['prev_h'] = st.session_state['h']
 
+def on_h_changed():
+    if st.session_state.get('keep_prop', False) and st.session_state['prev_h'] > 0:
+        factor = st.session_state['h'] / st.session_state['prev_h']
+        st.session_state['L'] = float(np.clip(round(st.session_state['prev_L'] * factor, 3), 0.5, 50.0))
+        st.session_state['S'] = float(np.clip(round(st.session_state['prev_S'] * factor, 3), 0.5, 50.0))
+    st.session_state['prev_L'] = st.session_state['L']
+    st.session_state['prev_S'] = st.session_state['S']
+    st.session_state['prev_h'] = st.session_state['h']
+
+# Оставшаяся часть логики t(key) и CSS-стилей
 def t(key):
-    """Получить перевод строки по ключу для текущего языка."""
     entry = TRANSLATIONS.get(key)
     if entry is None:
         return key
     return entry.get(st.session_state['lang'], entry.get('ru', key))
 
-# 2. CSS: Верстка
 st.markdown("""
     <style>
            .block-container {
@@ -234,22 +243,16 @@ st.markdown("""
 # --- ГЕОМЕТРИЧЕСКИЙ БЛОК ---
 
 def validate_cell_geometry(L, S, h, alpha_deg, scale):
-    """Проверяет элементарную ячейку на корректность."""
     if L <= 0.0 or S <= 0.0 or h <= 0.0 or scale <= 0.0:
-        return False, "Параметры L, S, h и Масштаб должны быть строго больше нуля"
-
+        return False, "Параметры L, S, h должны быть строго больше нуля"
     if alpha_deg <= 0.0 or alpha_deg >= 180.0:
         return False, "Угол Alpha должен быть в пределах от 0° до 180°"
-
     alpha = np.radians(alpha_deg)
     if np.sin(alpha) < 1e-4:
         return False, "Угол Alpha слишком близок к критическому значению (0° или 180°)"
-
     Ls, Ss, hs = L * scale, S * scale, h * scale
-
     if Ss * np.cos(alpha) >= Ls:
-        return False, "Самопересечение ребер: длина наклонного ребра S по горизонтали превосходит основание L (Ss*cos(alpha) >= Ls)"
-
+        return False, "Самопересечение ребер: длина наклонного ребра S по горизонтали превосходит основание L"
     try:
         points, _ = get_base_unit(L, S, h, alpha_deg, scale)
         poly = Polygon(points)
@@ -259,10 +262,8 @@ def validate_cell_geometry(L, S, h, alpha_deg, scale):
     except Exception as e:
         return False, f"Ошибка расчета геометрии: {str(e)}"
 
-
 @st.cache_data
 def get_base_unit(L, S, h, alpha_deg, scale):
-    """Рассчитывает координаты вершин элементарной ячейки (re-entrant honeycomb)."""
     Ls, Ss, hs = L * scale, S * scale, h * scale
     alpha = np.radians(alpha_deg)
     x1, y1 = 0, hs / 2.0
@@ -278,49 +279,35 @@ def get_base_unit(L, S, h, alpha_deg, scale):
     points = np.vstack([top, bottom])
     return points, (Ls, Ss, hs)
 
-
 def _extract_polygon_coords(geom, min_area=1e-4):
-    """Извлекает список массивов координат из геометрии Shapely."""
     results = []
     if geom is None or geom.is_empty:
         return results
-
     if geom.geom_type == 'Polygon':
         if geom.area >= min_area:
             coords = np.array(geom.exterior.coords)[:-1]
             if len(coords) >= 3:
                 results.append(coords)
-
     elif geom.geom_type in ('MultiPolygon', 'GeometryCollection'):
         for part in geom.geoms:
             results.extend(_extract_polygon_coords(part, min_area))
-
     return results
-
 
 @st.cache_data
 def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame_th, rotation=0.0):
-    """Генерирует сетку структуры с привязкой по осям горизонтального основания (x=0, y=0)."""
     points, scaled = get_base_unit(L, S, h, alpha, scale)
     Ls, Ss, hs = scaled
     alpha_r = np.radians(alpha)
-
     cx_step = (Ls - Ss * np.cos(alpha_r)) + (hs / 2.0) * np.sin(alpha_r)
     cy_step = (hs / 2.0 + Ss * np.sin(alpha_r)) + (hs / 2.0) * np.cos(alpha_r)
     w_step, v_step = 2 * cx_step, 2 * cy_step
 
-    bounding_rect = Polygon([
-        (0, 0), (target_B, 0), (target_B, target_A), (0, target_A)
-    ])
-
-    # ТРЕБОВАНИЕ: Центровка нижней грани по оси горизонтального основания ячейки
-    offset_x = 0.0
-    offset_y = 0.0  # Ось горизонтального ребра ячейки теперь совпадает с y = 0
+    bounding_rect = Polygon([(0, 0), (target_B, 0), (target_B, target_A), (0, target_A)])
+    offset_x = offset_y = 0.0
 
     r_circ = np.sqrt(target_B ** 2 + target_A ** 2)
     nx = max(4, int(np.ceil((target_B + r_circ) / w_step)) + 2)
     ny = max(4, int(np.ceil((target_A + r_circ) / v_step)) + 2)
-    
     start_x = -int(np.ceil(r_circ / w_step))
     start_y = -int(np.ceil(r_circ / v_step))
 
@@ -347,7 +334,6 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
                 u = rotate_around_origin(u)
 
             cell_poly = Polygon(u)
-
             if not cell_poly.is_valid or cell_poly.is_empty:
                 cell_poly = cell_poly.buffer(0)
                 if cell_poly.is_empty:
@@ -357,7 +343,6 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
                 continue
 
             n_e_original += 1
-
             clipped = bounding_rect.intersection(cell_poly)
             if not clipped.is_valid:
                 clipped = clipped.buffer(0)
@@ -371,10 +356,7 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
                             polygons_lattice.append(part)
 
     if not polygons_lattice:
-        return (
-            [], 0.0, target_B, target_A, target_B * target_A,
-            0.0, target_B, target_A, target_B * target_A, 0
-        )
+        return ([], 0.0, target_B, target_A, target_B * target_A, 0.0, target_B, target_A, target_B * target_A, 0)
 
     f_w_lattice = target_B
     f_h_lattice = target_A
@@ -388,21 +370,15 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
         s_real_lattice = sum(p.area for p in polygons_lattice)
 
     polygons_total = list(polygons_lattice)
-    f_w_total = f_w_lattice
-    f_h_total = f_h_lattice
-    s_eff_total = s_eff_lattice
-    s_real_total = s_real_lattice
+    f_w_total, f_h_total = f_w_lattice, f_h_lattice
+    s_eff_total, s_real_total = s_eff_lattice, s_real_lattice
 
     if add_frame:
         offset = frame_th / 2.0
-        out_min_y = -offset
-        in_min_y  = offset
-        out_max_y = target_A + offset
-        in_max_y  = target_A - offset
-        out_min_x = -offset
-        in_min_x  = offset
-        out_max_x = target_B + offset
-        in_max_x  = target_B - offset
+        out_min_y, in_min_y = -offset, offset
+        out_max_y, in_max_y = target_A + offset, target_A - offset
+        out_min_x, in_min_x = -offset, offset
+        out_max_x, in_max_x = target_B + offset, target_B - offset
 
         rect_B_arr = np.array([[out_min_x, out_min_y], [out_max_x, out_min_y], [out_max_x, in_min_y],  [out_min_x, in_min_y]])
         rect_T_arr = np.array([[out_min_x, in_max_y],  [out_max_x, in_max_y],  [out_max_x, out_max_y], [out_min_x, out_max_y]])
@@ -421,36 +397,23 @@ def compute_geometry(L, S, h, alpha, scale, target_B, target_A, add_frame, frame
     for p in polygons_total:
         all_units_out.extend(_extract_polygon_coords(p))
 
-    return (
-        all_units_out,
-        s_real_lattice, f_w_lattice, f_h_lattice, s_eff_lattice,
-        s_real_total, f_w_total, f_h_total, s_eff_total,
-        n_e
-    )
-
+    return (all_units_out, s_real_lattice, f_w_lattice, f_h_lattice, s_eff_lattice, s_real_total, f_w_total, f_h_total, s_eff_total, n_e)
 
 @st.cache_data
 def generate_stl(all_units, depth):
-    """Оптимизированная векторизованная генерация STL-сетки."""
     if not all_units:
         raise ValueError("Нет геометрии для генерации STL")
-
     all_face_blocks = []
     for pts in all_units:
         num_pts = len(pts)
-        if num_pts < 3:
-            continue
-
+        if num_pts < 3: continue
         p_bot = np.hstack([pts, np.zeros((num_pts, 1))])
         p_top = np.hstack([pts, np.full((num_pts, 1), depth)])
-
         k_indices = np.arange(num_pts)
         next_k_indices = (k_indices + 1) % num_pts
-
         t1 = np.stack([p_bot[k_indices], p_bot[next_k_indices], p_top[next_k_indices]], axis=1)
         t2 = np.stack([p_bot[k_indices], p_top[next_k_indices], p_top[k_indices]], axis=1)
         unit_faces = [t1, t2]
-
         polygon_vertices = [tuple(p) for p in pts]
         try:
             triangles = tripy.earclip(polygon_vertices)
@@ -465,42 +428,25 @@ def generate_stl(all_units, depth):
                 unit_faces.append(t_tri)
         except Exception:
             pass
-
         all_face_blocks.append(np.concatenate(unit_faces, axis=0))
 
     if not all_face_blocks:
         raise ValueError("STL: не удалось построить ни одного полигона")
-
     faces_array = np.concatenate(all_face_blocks, axis=0)
     model = mesh.Mesh(np.zeros(faces_array.shape[0], dtype=mesh.Mesh.dtype))
     model.vectors = faces_array
     model.update_normals()
     return model
 
-
 def create_3d_plot(stl_mesh):
     vertices = stl_mesh.vectors.reshape(-1, 3)
     x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
-    i = np.arange(0, len(x), 3)
-    j = np.arange(1, len(x), 3)
-    k = np.arange(2, len(x), 3)
-
-    fig = go.Figure(data=[
-        go.Mesh3d(
-            x=x, y=y, z=z,
-            i=i, j=j, k=k,
-            color='#5c88be',
-            flatshading=True,
-            lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.5, specular=0.5, fresnel=0.2),
-            lightposition=dict(x=100, y=100, z=100)
-        )
-    ])
-    fig.update_layout(
-        scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectmode='data'),
-        margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=420
-    )
+    i, j, k = np.arange(0, len(x), 3), np.arange(1, len(x), 3), np.arange(2, len(x), 3)
+    fig = go.Figure(data=[go.Mesh3d(x=x, y=y, z=z, i=i, j=j, k=k, color='#5c88be', flatshading=True,
+                                   lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.5, specular=0.5, fresnel=0.2))])
+    fig.update_layout(scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectmode='data'),
+                      margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=420)
     return fig
-
 
 # --- РАСПРЕДЕЛЕНИЕ КОЛОНОК ---
 col_params, col_plot, col_metrics = st.columns([1.0, 3.0, 1.2])
@@ -516,15 +462,17 @@ with col_params:
         c1.markdown(f'<div class="label-col" {tooltip_attr}>{label}{icon}</div>', unsafe_allow_html=True)
         return c2.number_input(label, min_v, max_v, step=step, key=key, on_change=on_change, label_visibility="collapsed")
 
-    L_v  = compact_input(t("L_label"),     0.5,   50.0,  0.1,  "L",     t("L_help"),     on_change=on_geometry_changed)
-    S_v  = compact_input(t("S_label"),     0.5,   50.0,  0.1,  "S",     t("S_help"),     on_change=on_geometry_changed)
-    h_v  = compact_input(t("h_label"),    0.01,   10.0,  0.05, "h",     t("h_help"),     on_change=on_geometry_changed)
+    # Передача кастомных on_change коллбэков для полей геометрии ячейки
+    L_v  = compact_input(t("L_label"),     0.5,   50.0,  0.1,  "L",     t("L_help"),     on_change=on_L_changed)
+    S_v  = compact_input(t("S_label"),     0.5,   50.0,  0.1,  "S",     t("S_help"),     on_change=on_S_changed)
+    h_v  = compact_input(t("h_label"),    0.01,   10.0,  0.05, "h",     t("h_help"),     on_change=on_h_changed)
     
     c1_a, c2_a = st.columns([1.1, 1.0])
     c1_a.markdown(f'<div class="label-col" title="{t("alpha_help")}">{t("alpha_label")} ⓘ</div>', unsafe_allow_html=True)
     a_v = c2_a.number_input(t("alpha_label"), 10.0, 170.0, 60.0, 1.0, key="alpha", label_visibility="collapsed")
 
-    sc_v = compact_input(t("scale_label"), 0.01,  20.0,  0.1,  "scale", t("scale_help"), on_change=on_scale_changed)
+    # Добавление чек-бокса взамен поля "Масштаб"
+    keep_prop = st.checkbox(t("keep_prop_label"), value=False, key="keep_prop", help=t("keep_prop_help"))
 
     st.markdown(f'<div class="section-header">{t("model_params")}</div><div style="height: 12px;"></div>', unsafe_allow_html=True)
     
@@ -553,8 +501,8 @@ with col_params:
     if add_frame:
         frame_th = compact_input(t("frame_th"), 0.01, 50.0, 0.05, "frame_th", t("frame_th_help"))
 
-    # Валидация
-    is_geom_valid, geom_error = validate_cell_geometry(L_v, S_v, h_v, a_v, sc_v)
+    # Валидация. Глобальный масштаб теперь жестко равен 1.0
+    is_geom_valid, geom_error = validate_cell_geometry(L_v, S_v, h_v, a_v, 1.0)
     if is_geom_valid:
         if target_B <= 0.0 or target_A <= 0.0 or z_depth <= 0.0 or ro_real_v <= 0.0:
             is_geom_valid = False
@@ -566,20 +514,14 @@ with col_params:
     if not is_geom_valid:
         st.error(geom_error)
 
-    # Расчет
+    # Генерация сетки
     if is_geom_valid:
-        (
-            all_units_coords,
-            s_real_lattice, f_w_lattice, f_h_lattice, s_eff_lattice,
-            s_real_total, f_w_total, f_h_total, s_eff_total,
-            n_e
-        ) = compute_geometry(
-            L_v, S_v, h_v, a_v, sc_v, target_B, target_A, add_frame, frame_th, rot_v
+        all_units_coords, s_real_lattice, f_w_lattice, f_h_lattice, s_eff_lattice, s_real_total, f_w_total, f_h_total, s_eff_total, n_e = compute_geometry(
+            L_v, S_v, h_v, a_v, 1.0, target_B, target_A, add_frame, frame_th, rot_v
         )
     else:
-        all_units_coords = []
-        s_real_lattice = f_w_lattice = f_h_lattice = s_eff_lattice = 0.0
-        s_real_total = f_w_total = f_h_total = s_eff_total = 0.0
+        all_units_coords, s_real_lattice = [], 0.0
+        f_w_lattice = f_h_lattice = s_eff_lattice = s_real_total = f_w_total = f_h_total = s_eff_total = 0.0
         n_e = 0
 
     active_w     = f_w_total     if add_frame else f_w_lattice
@@ -587,7 +529,7 @@ with col_params:
     active_s_eff = s_eff_total   if add_frame else s_eff_lattice
     active_s_real = s_real_total if add_frame else s_real_lattice
 
-    _param_hash = hash((L_v, S_v, h_v, a_v, sc_v, target_B, target_A, z_depth, add_frame, frame_th, rot_v))
+    _param_hash = hash((L_v, S_v, h_v, a_v, float(keep_prop), target_B, target_A, z_depth, add_frame, frame_th, rot_v))
 
     st.write("")
     if st.button(t("btn_generate"), use_container_width=True, disabled=(not is_geom_valid or not all_units_coords)):
@@ -603,13 +545,7 @@ with col_params:
                 st.error(f"Ошибка генерации STL: {e}")
 
     if 'stl_ready' in st.session_state:
-        st.download_button(
-            t("btn_download"),
-            st.session_state['stl_ready'],
-            "auxetic.stl",
-            "application/sla",
-            use_container_width=True
-        )
+        st.download_button(t("btn_download"), st.session_state['stl_ready'], "auxetic.stl", "application/sla", use_container_width=True)
 
 # --- ЦЕНТРАЛЬНАЯ КОЛОНКА ---
 with col_plot:
@@ -618,31 +554,16 @@ with col_plot:
 
     with tab1:
         fig = go.Figure()
-        
-        # Габаритная граница модели
-        bx = [0, target_B, target_B, 0, 0]
-        by = [0, 0, target_A, target_A, 0]
-        fig.add_trace(go.Scatter(
-            x=bx, y=by, mode='lines', line=dict(color='#ff6b6b', width=1.5, dash='dash'), name='boundary', hoverinfo='skip'
-        ))
+        bx, by = [0, target_B, target_B, 0, 0], [0, 0, target_A, target_A, 0]
+        fig.add_trace(go.Scatter(x=bx, y=by, mode='lines', line=dict(color='#ff6b6b', width=1.5, dash='dash'), name='boundary', hoverinfo='skip'))
 
-        # Отрисовка пореберных ячеек и отдельных кусков рамок
         for u in all_units_coords:
-            fig.add_trace(go.Scatter(
-                x=u[:, 0].tolist() + [u[0, 0]],
-                y=u[:, 1].tolist() + [u[0, 1]],
-                fill="toself",
-                mode="lines",
-                line=dict(color='#111111', width=0.8),
-                fillcolor='#5c88be',
-                hoverinfo='skip'
-            ))
+            fig.add_trace(go.Scatter(x=u[:, 0].tolist() + [u[0, 0]], y=u[:, 1].tolist() + [u[0, 1]], fill="toself", mode="lines",
+                                     line=dict(color='#111111', width=0.8), fillcolor='#5c88be', hoverinfo='skip'))
 
-        fig.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", margin=dict(l=0, r=0, t=10, b=0), showlegend=False,
-            xaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False, scaleanchor="y", scaleratio=1),
-            yaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False), height=420
-        )
+        fig.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", margin=dict(l=0, r=0, t=10, b=0), showlegend=False,
+                           xaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False, scaleanchor="y", scaleratio=1),
+                           yaxis=dict(showgrid=True, gridcolor='#3d4455', zeroline=False), height=420)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     with tab2:
@@ -676,19 +597,15 @@ with col_metrics:
                 f'<div class="m-value">{value}<span class="m-unit">{unit}</span></div>'
                 f'</div>')
 
-    s_e_cell           = s_real_lattice / n_e if n_e > 0 else 0
-    volume_total       = s_real_total * z_depth
-    sample_mass        = volume_total * ro_real_v * 0.001
+    s_e_cell = s_real_lattice / n_e if n_e > 0 else 0
+    volume_total = s_real_total * z_depth
+    sample_mass = volume_total * ro_real_v * 0.001
     ro_eff_total_percent = (s_real_total / s_eff_total * 100) if s_eff_total > 0 else 0
 
     _alpha_r = np.radians(a_v)
-    _sin_a   = np.sin(_alpha_r)
-    _cos_a   = np.cos(_alpha_r)
-    _ratio   = S_v / L_v
-    nu_star  = (
-        -(_cos_a * (1 - _ratio * _cos_a)) / ((_sin_a ** 2) * _ratio)
-        if abs(_sin_a) > 1e-6 and abs(_ratio) > 1e-6 else 0.0
-    )
+    _sin_a, _cos_a = np.sin(_alpha_r), np.cos(_alpha_r)
+    _ratio = S_v / L_v
+    nu_star = (-(_cos_a * (1 - _ratio * _cos_a)) / ((_sin_a ** 2) * _ratio) if abs(_sin_a) > 1e-6 and abs(_ratio) > 1e-6 else 0.0)
 
     metrics_list = [
         metric_card(t("m_height"), f"{active_h:.1f}", t("mm")),
@@ -711,9 +628,4 @@ with col_metrics:
         st.markdown(f'<div class="section-header">{t("scheme")}</div><div style="height: 8px;"></div>', unsafe_allow_html=True)
         st.image(str(_scheme_path), use_container_width=True)
 
-    st.markdown(
-        '<div class="column-footer">'
-        '© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS'
-        '</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="column-footer">© 2026 Demin A.I. — Laboratory of Mechanics of Novel Materials and Technologies IPMech RAS</div>', unsafe_allow_html=True)
