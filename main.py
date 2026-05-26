@@ -10,7 +10,7 @@ import os
 
 # Ссылка на ваше приложение Streamlit
 # TODO: Укажите здесь URL вашего приложения
-STREAMLIT_URL = os.environ.get("STREAMLIT_APP_URL", "https://your-app-name.streamlit.app/")
+STREAMLIT_URL = os.environ.get("STREAMLIT_APP_URL", "https://ipmechauxeticlattice.streamlit.app/")
 
 def main():
     options = Options()
